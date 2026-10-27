@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors, Spacing, Radius, Typography } from '../../constants/theme';
 import { api } from '../../lib/api';
 import { Gathering, Message, JoinRequest } from '../../lib/types';
-import { Share, Alert, TextInput } from 'react-native';
+import { Share, Alert, TextInput, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth';
 import { parseMissionDescription } from '../../lib/irlMode';
@@ -51,7 +51,7 @@ export default function GatheringDetail() {
   const eventEnded = new Date(g.end_time).getTime() <= Date.now();
   const canCreateStory = user?.id === g.host_id || g.my_request_status === 'approved';
   const shareStory = async () => {
-    const base = process.env.EXPO_PUBLIC_API_URL || 'https://hangout.app';
+    const base = process.env.EXPO_PUBLIC_API_URL || (Platform.OS === 'android' ? 'http://10.0.2.2:4000' : 'http://localhost:4000');
     const link = `${base}/share/g/${g.id}`;
     const line = recapStory.trim() || `We made a plan around ${g.title}.`;
     const challengeLine = mission.challenge ? `Our challenge: ${mission.challenge}` : '';
