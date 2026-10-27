@@ -59,6 +59,7 @@ export const api = {
   myGatherings: () => request('/me/gatherings'),
   feed: (userId?: string) => request('/feed' + (userId ? '?user_id=' + encodeURIComponent(userId) : '')),
   createPost: (b: any) => request('/feed', { method: 'POST', body: JSON.stringify(b) }),
+  shareMemoryToFeed: (b: { body?: string; media_url: string; media_type: 'image' | 'video'; source_gathering_id: string; public_consent: true }) => request('/feed', { method: 'POST', body: JSON.stringify(b) }),
   deletePost: (id: string) => request('/feed/' + id, { method: 'DELETE' }),
   likePost: (id: string) => request('/feed/' + id + '/like', { method: 'POST' }),
   unlikePost: (id: string) => request('/feed/' + id + '/like', { method: 'DELETE' }),
