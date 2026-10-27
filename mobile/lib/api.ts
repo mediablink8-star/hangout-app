@@ -2,8 +2,17 @@ import { Gathering, Profile, JoinRequest, Message } from './types';
 
 const BASE = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:4000';
 
+import { readToken, writeToken } from './tokenStorage';
+
 let token: string | null = null;
-export function setToken(t: string | null) { token = t; }
+export async function setToken(t: string | null) {
+  await writeToken(t);
+  token = t;
+}
+export async function restoreToken() {
+  token = await readToken();
+  return token;
+}
 export function getToken() { return token; }
 
 async function request(path: string, opts: RequestInit = {}) {
