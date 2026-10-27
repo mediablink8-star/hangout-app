@@ -1,0 +1,42 @@
+# dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# expo / metro
+.expo/
+dist/
+web-build/
+
+# native
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# env
+.env
+.env.local
+.env.*.local
+
+# databases / local data
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-journal
+
+# logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# build
+build/
+coverage/

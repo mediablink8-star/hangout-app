@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Hangout Map",
+    "slug": "hangout-map",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "scheme": "hangout",
+    "ios": {
+      "bundleIdentifier": "com.hangout.map",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "com.hangout.map",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0F14"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-location",
+      "expo-image-picker",
+      "expo-status-bar",
+      "expo-video",
+      "expo-font"
+    ]
+  }
+}
