@@ -83,7 +83,7 @@ app.post('/auth/signup', limitAuth, (req, res) => {
   if (password.length < 8 || password.length > 128) return res.status(400).json({ error: 'password must be 8-128 characters' });
   if (display_name.trim().length < 1 || display_name.trim().length > 60) return res.status(400).json({ error: 'display name must be 1-60 characters' });
   const normalizedEmail = email.trim().toLowerCase();
-  if (normalizedEmail.length > 254 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) return res.status(400).json({ error: 'invalid email' });
+  if (normalizedEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) return res.status(400).json({ error: 'invalid email' });
   const birthDate = new Date(birth_date);
   if (Number.isNaN(birthDate.getTime())) return res.status(400).json({ error: 'invalid birth date' });
   const age = (Date.now() - birthDate.getTime()) / (365.25 * 24 * 3600 * 1000);
