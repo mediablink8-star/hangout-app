@@ -10,7 +10,7 @@ Hangout Map helps people ages 18–29 discover spontaneous local gatherings. Hos
 
 ## Local development
 
-Use Node.js 22.5 or newer.
+Use Node.js 22.13 or newer for both the backend and Expo SDK 58 mobile app.
 
 ```sh
 cd backend
@@ -46,4 +46,3 @@ Configure `EXPO_PUBLIC_API_URL` in the EAS production environment with the deplo
 - Session tokens expire after 30 days and are signed with `TOKEN_SECRET`. Changing this secret logs out existing users.
 - Keep production on HTTPS and set restrictive CORS origins if browser clients are enabled.
 - Complete the platform privacy forms, moderation and incident response process, database backup verification, and end-to-end release checks before public launch.
-
