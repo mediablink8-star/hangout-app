@@ -126,7 +126,7 @@ app.post('/me/location', auth, (req, res) => {
   const { lat, lng } = req.body || {};
   const p = db.prepare('SELECT share_location FROM profiles WHERE id = ?').get(req.userId);
   if (!p || !p.share_location) return res.status(403).json({ error: 'location sharing disabled' });
-  if (lat == null || lng == null) return res.status(400).json({ error: 'lat/lng required' });
+  if (typeof lat !== 'number' || typeof lng !== 'number' || !Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) return res.status(400).json({ error: 'valid lat/lng required' });
   db.prepare('INSERT INTO live_locations (user_id, lat, lng, updated_at) VALUES (?,?,?,datetime(\'now\')) ON CONFLICT(user_id) DO UPDATE SET lat=excluded.lat, lng=excluded.lng, updated_at=datetime(\'now\')').run(req.userId, lat, lng);
   res.json({ ok: true });
 });
@@ -198,11 +198,22 @@ app.get('/gatherings/:id', auth, (req, res) => {
 
 app.post('/gatherings', auth, (req, res) => {
   const { title, category, description, start_time, end_time, max_guests, lat, lng, address, visibility } = req.body || {};
-  if (!title || !category || !start_time || !end_time || lat == null || lng == null || !address) return res.status(400).json({ error: 'missing fields' });
+  if (typeof title !== 'string' || !title.trim() || title.trim().length > 80) return res.status(400).json({ error: 'title must be 1-80 characters' });
+  const categories = ['coffee', 'study', 'sports', 'outdoors', 'bar', 'party', 'other'];
+  if (!categories.includes(category)) return res.status(400).json({ error: 'invalid category' });
+  const startDate = new Date(start_time), endDate = new Date(end_time);
+  if (!start_time || !end_time || Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate <= startDate) return res.status(400).json({ error: 'end time must be after a valid start time' });
+  if (typeof lat !== 'number' || !Number.isFinite(lat) || lat < -90 || lat > 90 || typeof lng !== 'number' || !Number.isFinite(lng) || lng < -180 || lng > 180) return res.status(400).json({ error: 'valid map location required' });
+  if (typeof address !== 'string' || !address.trim() || address.trim().length > 500) return res.status(400).json({ error: 'address must be 1-500 characters' });
+  if (description != null && (typeof description !== 'string' || description.length > 2000)) return res.status(400).json({ error: 'description must be at most 2000 characters' });
+  const guestLimit = max_guests == null ? 10 : Number(max_guests);
+  if (!Number.isInteger(guestLimit) || guestLimit < 1 || guestLimit > 100) return res.status(400).json({ error: 'capacity must be between 1 and 100' });
+  const safeVisibility = visibility == null ? 'approval' : visibility;
+  if (!['approval', 'public'].includes(safeVisibility)) return res.status(400).json({ error: 'invalid visibility' });
   const id = uid();
   const latF = fuzzCoord(lat), lngF = fuzzCoord(lng);
   db.prepare('INSERT INTO gatherings (id,host_id,title,category,description,start_time,end_time,max_guests,lat_exact,lng_exact,address,lat_fuzz,lng_fuzz,visibility) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
-    .run(id, req.userId, title, category, description || '', start_time, end_time, max_guests || 10, lat, lng, address, latF, lngF, visibility || 'approval');
+    .run(id, req.userId, title.trim(), category, (description || '').trim(), startDate.toISOString(), endDate.toISOString(), guestLimit, lat, lng, address.trim(), latF, lngF, safeVisibility);
   // create conversation + add host
   const cid = uid();
   db.prepare('INSERT INTO conversations (id,type,gathering_id,title) VALUES (?,?,?,?)').run(cid, 'gathering', id, title);
@@ -345,9 +356,13 @@ app.get('/feed', auth, (req, res) => {
 
 app.post('/feed', auth, (req, res) => {
   const { body, media_url, media_type } = req.body || {};
-  if (!body && !media_url) return res.status(400).json({ error: 'empty post' });
+  if (body != null && typeof body !== 'string') return res.status(400).json({ error: 'invalid post body' });
+  const postBody = (body || '').trim();
+  if (!postBody && !media_url) return res.status(400).json({ error: 'empty post' });
+  if (postBody.length > 1000) return res.status(400).json({ error: 'post is too long' });
+  if (media_url != null && (typeof media_url !== 'string' || media_url.length > 14000000 || !['image', 'video'].includes(media_type))) return res.status(400).json({ error: 'invalid or oversized media' });
   const id = uid();
-  db.prepare('INSERT INTO posts (id,user_id,body,media_url,media_type) VALUES (?,?,?,?,?)').run(id, req.userId, body || '', media_url || null, media_type || null);
+  db.prepare('INSERT INTO posts (id,user_id,body,media_url,media_type) VALUES (?,?,?,?,?)').run(id, req.userId, postBody, media_url || null, media_type || null);
   res.status(201).json({ id });
 });
 
