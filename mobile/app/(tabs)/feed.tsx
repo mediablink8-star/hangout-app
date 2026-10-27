@@ -160,7 +160,7 @@ export default function Feed() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
-  pageHeader: { marginBottom: Spacing.lg },
+  pageHeader: { marginBottom: Spacing.xl, paddingTop: Spacing.md },
   kickerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginBottom: Spacing.xs },
   liveDot: { width: 7, height: 7, borderRadius: Radius.full, backgroundColor: Colors.dark.primary },
   kicker: { color: Colors.dark.primary, fontSize: 10, fontWeight: '800', letterSpacing: 1.4 },
