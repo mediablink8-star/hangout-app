@@ -28,6 +28,7 @@ export default function Feed() {
   const [body, setBody] = useState('');
   const [media, setMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
   const [posting, setPosting] = useState(false);
+  const [publicShareConfirmed, setPublicShareConfirmed] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -68,7 +69,7 @@ export default function Feed() {
     setPosting(true);
     try {
       await api.createPost({ body: body.trim(), media_url: media?.url || null, media_type: media?.type || null });
-      setBody(''); setMedia(null);
+      setBody(''); setMedia(null); setPublicShareConfirmed(false);
       await load();
     } catch (e: any) { Alert.alert('Error', e.message); }
     setPosting(false);
@@ -104,6 +105,15 @@ export default function Feed() {
         <Text style={styles.composerTitle}>Share a moment</Text>
         <TextInput accessibilityLabel="Write a post" style={styles.input} placeholder="What’s on your mind?" placeholderTextColor={Colors.dark.textMuted} value={body} onChangeText={setBody} multiline maxLength={1000} />
         <Text style={styles.charCount}>{body.length}/1000</Text>
+        <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{ checked: publicShareConfirmed }} onPress={() => setPublicShareConfirmed((v) => !v)} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: Spacing.md, padding: Spacing.md, borderRadius: Radius.md, backgroundColor: Colors.dark.glass, borderWidth: 1, borderColor: publicShareConfirmed ? Colors.dark.primary : Colors.dark.border }}>
+          <View style={{ width: 20, height: 20, borderRadius: 5, borderWidth: 1, borderColor: publicShareConfirmed ? Colors.dark.primary : Colors.dark.textMuted, backgroundColor: publicShareConfirmed ? Colors.dark.primary : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+            {publicShareConfirmed ? <Text style={{ color: Colors.dark.background, fontWeight: '900' }}>✓</Text> : null}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: Colors.dark.text, fontSize: 13, fontWeight: '700' }}>I’m ready to share this publicly</Text>
+            <Text style={{ color: Colors.dark.textMuted, fontSize: 12, lineHeight: 17, marginTop: 3 }}>Only post photos you have permission to share. Avoid exposing anyone’s private moments, exact location, or identifying details without their consent.</Text>
+          </View>
+        </TouchableOpacity>
         {media && (
           <View style={styles.preview}>
             {media.type === 'image' ? <Image source={{ uri: media.url }} style={styles.previewImg} /> : <Text style={{ color: Colors.dark.text }}>Video attached</Text>}
@@ -113,7 +123,7 @@ export default function Feed() {
         <View style={{ flexDirection: 'row', marginTop: Spacing.sm, gap: 8 }}>
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Add a photo" style={styles.mediaBtn} onPress={() => pickMedia('image')}><Text style={styles.mediaBtnText}>▧  Photo</Text></TouchableOpacity>
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Add a video" style={styles.mediaBtn} onPress={() => pickMedia('video')}><Text style={styles.mediaBtnText}>▷  Video</Text></TouchableOpacity>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Publish post" style={[styles.postBtn, (posting || (!body.trim() && !media)) && { opacity: 0.5 }]} onPress={submit} disabled={posting || (!body.trim() && !media)}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Publish post" style={[styles.postBtn, (posting || (!body.trim() && !media) || !publicShareConfirmed) && { opacity: 0.5 }]} onPress={submit} disabled={posting || (!body.trim() && !media) || !publicShareConfirmed}>
             {posting ? <ActivityIndicator color={Colors.dark.background} size="small" /> : <Text style={styles.postBtnText}>Share</Text>}
           </TouchableOpacity>
         </View>
