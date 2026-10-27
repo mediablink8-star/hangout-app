@@ -1,34 +1,49 @@
-# Hangout Map MVP
+# Hangout Map
 
-Mobile (React Native / Expo) app implementing the hangout-map spec: people 18-29 post spontaneous hangouts, others request to join, hosts approve, exact address hidden until approved. Group chat for members. Safety tools (block/report).
+Hangout Map helps people ages 18–29 discover spontaneous local gatherings. Hosts approve join requests, exact addresses stay hidden until approval, and members can use group chat. The app also includes blocking and reporting tools.
 
-## Layout
+## Project layout
 
-- `mobile/` — Expo app (Android + iOS)
-- `backend/` — Node/Express + SQLite API (deployable to Render)
+- `mobile/` — Expo app for iOS, Android, and web
+- `backend/` — Express API using Node's built-in SQLite database
+- `render.yaml` — Render service blueprint with a persistent disk and generated signing secret
 
-## Backend
+## Local development
 
-```
+Use Node.js 22.5 or newer.
+
+```sh
 cd backend
-npm install
-node server.js          # PORT env (default 4000), DB_PATH env
-npm test                # age rule + address-hiding rule tests
+npm ci
+npm test
+npm start
 ```
 
-Endpoints: /auth/signup, /auth/signin, /me, /u/:id, /gatherings, /gatherings/:id, /gatherings/:id/requests, /gatherings/:id/messages, /blocks, /reports, /me/gatherings.
+The API listens on port 4000 by default. Set `DB_PATH` to choose the SQLite file. In production, set `TOKEN_SECRET` to a long random secret; the service refuses to start in production without it.
 
-## Mobile
-
-```
+```sh
 cd mobile
-npm install
-npx tsc --noEmit       # type check
-npx expo start         # dev server
+npm ci
+npx tsc --noEmit
+npx expo start
 ```
 
-Set `EXPO_PUBLIC_API_URL` to your backend URL (defaults to http://10.0.2.2:4000 for Android emulator).
+Set `EXPO_PUBLIC_API_URL` to the API URL. The default `http://10.0.2.2:4000` is only for an Android emulator. Production builds need the deployed HTTPS API URL configured in the EAS environment.
 
-## Deploy (Render)
+## Deploy the API to Render
 
-Create a Render Web Service from `backend/`, set PORT (Render provides) and DB_PATH. Add a Render Postgres and swap node:sqlite for pg in a follow-up. Mobile: build with EAS (`eas build`).
+The repository's `render.yaml` configures a paid single-instance service with a 1 GB persistent disk mounted at `/var/data`. The disk keeps the SQLite database across restarts and deploys. Review the blueprint in Render before creating the service, then set its generated `TOKEN_SECRET` value and confirm the health check at `/health`.
+
+This SQLite deployment is intended for a single API instance. Do not scale it horizontally. Before launch, configure and verify database backups and a restore procedure. For multi-instance scaling, move data and uploaded media to managed services such as PostgreSQL and object storage.
+
+## Mobile release builds
+
+Configure `EXPO_PUBLIC_API_URL` in the EAS production environment with the deployed HTTPS API URL, then run `eas build --platform all --profile production`. The app's iOS and Android store accounts, signing credentials, privacy disclosures, and store listings must be configured separately.
+
+## Security and launch notes
+
+- Passwords are stored with salted scrypt hashes. Existing SHA-256 hashes upgrade after a successful sign-in; require a password reset for accounts that have not signed in before launch.
+- Session tokens expire after 30 days and are signed with `TOKEN_SECRET`. Changing this secret logs out existing users.
+- Keep production on HTTPS and set restrictive CORS origins if browser clients are enabled.
+- Complete the platform privacy forms, moderation and incident response process, database backup verification, and end-to-end release checks before public launch.
+

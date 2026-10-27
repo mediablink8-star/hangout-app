@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Spacing, Radius, Typography } from '../../constants/theme';
 import { Gathering, Category } from '../../lib/types';
@@ -16,8 +16,14 @@ export default function MapHome() {
   const [gatherings, setGatherings] = useState<Gathering[]>([]);
   const [cat, setCat] = useState<Category | null>(null);
   const [timeFilter, setTimeFilter] = useState<'all' | 'now' | 'today' | 'upcoming'>('all');
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const requestId = useRef(0);
 
   const load = async () => {
+    const currentRequest = ++requestId.current;
+    setIsLoading(true);
+    setLoadError(false);
     const q: any = {};
     if (cat) q.category = cat;
     if (timeFilter === 'now') {
@@ -36,7 +42,14 @@ export default function MapHome() {
       q.from = now.toISOString();
       q.to = in7.toISOString();
     }
-    try { setGatherings(await api.gatherings(q)); } catch { /* offline */ }
+    try {
+      const results = await api.gatherings(q);
+      if (currentRequest === requestId.current) setGatherings(results);
+    } catch {
+      if (currentRequest === requestId.current) setLoadError(true);
+    } finally {
+      if (currentRequest === requestId.current) setIsLoading(false);
+    }
   };
   useEffect(() => { load(); }, [cat, timeFilter]);
 
@@ -58,17 +71,17 @@ export default function MapHome() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <View>
-          <Text style={[Typography.caption, { color: Colors.dark.textMuted }]}>Hey, {user.display_name}</Text>
+          <Text style={[Typography.caption, { color: Colors.dark.textMuted }]}>Hey, {user.display_name?.trim() || 'there'}</Text>
           <Text style={[Typography.display, { color: Colors.dark.text }]}>What's happening?</Text>
         </View>
         <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' }}>
-          <TouchableOpacity style={styles.avatarBtn} onPress={() => router.push('/notifications')}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Notifications" style={styles.avatarBtn} onPress={() => router.push('/notifications')}>
             <Text style={styles.avatarText}>🔔</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.avatarBtn} onPress={() => router.push('/friends')}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Friends" style={styles.avatarBtn} onPress={() => router.push('/friends')}>
             <Text style={styles.avatarText}>👥</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.avatarBtn} onPress={() => router.push('/(tabs)/profile')}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Your profile" style={styles.avatarBtn} onPress={() => router.push('/(tabs)/profile')}>
             <Text style={styles.avatarText}>{user.display_name.charAt(0).toUpperCase()}</Text>
           </TouchableOpacity>
         </View>
@@ -98,7 +111,22 @@ export default function MapHome() {
           ))}
         </ScrollView>
       </View>
-      {gatherings.length === 0 && (
+      {isLoading && (
+        <View accessibilityLiveRegion="polite" style={styles.statusCard}>
+          <ActivityIndicator color={Colors.dark.primary} size="small" />
+          <Text style={styles.statusText}>Finding hangouts…</Text>
+        </View>
+      )}
+      {loadError && !isLoading && (
+        <View accessibilityLiveRegion="polite" style={styles.statusCard}>
+          <Text style={[Typography.h3, { color: Colors.dark.text }]}>Map couldn’t load</Text>
+          <Text style={[Typography.caption, { color: Colors.dark.textMuted, marginTop: Spacing.xs }]}>Check your connection and try again.</Text>
+          <TouchableOpacity accessibilityRole="button" style={styles.retryBtn} onPress={load}>
+            <Text style={styles.retryText}>Try again</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      {!isLoading && !loadError && gatherings.length === 0 && (
         <View style={styles.emptyCard}>
           <Text style={[Typography.h3, { color: Colors.dark.text, textAlign: 'center' }]}>Nothing happening nearby yet.</Text>
           <Text style={[Typography.caption, { color: Colors.dark.textMuted, textAlign: 'center', marginTop: Spacing.xs }]}>
@@ -142,6 +170,10 @@ const styles = StyleSheet.create({
   chipTextOn: { color: Colors.dark.background },
   clearBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.full, backgroundColor: Colors.dark.glassStrong, borderWidth: 1, borderColor: Colors.dark.borderStrong, marginLeft: Spacing.xs },
   clearText: { color: Colors.dark.text, fontSize: 13, fontWeight: '600' },
+  statusCard: { position: 'absolute', bottom: 90, left: Spacing.lg, right: Spacing.lg, alignItems: 'center', backgroundColor: Colors.dark.glassStrong, padding: Spacing.lg, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.dark.border, gap: Spacing.sm },
+  statusText: { color: Colors.dark.textMuted, fontSize: 13, fontWeight: '600' },
+  retryBtn: { backgroundColor: Colors.dark.primary, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, borderRadius: Radius.full, marginTop: Spacing.xs },
+  retryText: { color: Colors.dark.background, fontWeight: '700', fontSize: 13 },
   emptyCard: { position: 'absolute', bottom: 90, left: Spacing.lg, right: Spacing.lg, backgroundColor: Colors.dark.glassStrong, padding: Spacing.md, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.dark.border },
   emptyBtn: { backgroundColor: Colors.dark.primary, paddingVertical: Spacing.sm, borderRadius: Radius.md, alignItems: 'center' },
   emptyBtnText: { color: Colors.dark.background, fontWeight: '700', fontSize: 13 },

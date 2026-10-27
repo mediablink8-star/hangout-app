@@ -18,7 +18,12 @@
     },
     "plugins": [
       "expo-router",
-      "expo-location",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Hangout Map to center the map on nearby gatherings."
+        }
+      ],
       "expo-image-picker",
       "expo-status-bar",
       "expo-video",
