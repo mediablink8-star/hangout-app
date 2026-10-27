@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius, Typography } from '../../constants/theme';
 import { Gathering, Category } from '../../lib/types';
 import { api } from '../../lib/api';
@@ -70,20 +71,32 @@ export default function MapHome() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <View>
-          <Text style={[Typography.caption, { color: Colors.dark.textMuted }]}>Hey, {user.display_name?.trim() || 'there'}</Text>
-          <Text style={[Typography.display, { color: Colors.dark.text }]}>What's happening?</Text>
+        <View style={styles.brandRow}>
+          <View style={styles.brandLockup}>
+            <View style={styles.brandMark}><Text style={styles.brandMarkText}>H</Text></View>
+            <View>
+              <Text style={styles.brandName}>hangout</Text>
+              <Text style={styles.brandCaption}>YOUR CITY, TOGETHER</Text>
+            </View>
+          </View>
+          <View style={styles.headerActions}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Notifications" style={styles.iconBtn} onPress={() => router.push('/notifications')}>
+              <Ionicons name="notifications-outline" size={19} color={Colors.dark.text} />
+            </TouchableOpacity>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Friends" style={styles.iconBtn} onPress={() => router.push('/friends')}>
+              <Ionicons name="people-outline" size={19} color={Colors.dark.text} />
+            </TouchableOpacity>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Your profile" style={styles.profileBtn} onPress={() => router.push('/(tabs)/profile')}>
+              <Text style={styles.profileBtnText}>{(user.display_name?.trim() || 'H').charAt(0).toUpperCase()}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' }}>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Notifications" style={styles.avatarBtn} onPress={() => router.push('/notifications')}>
-            <Text style={styles.avatarText}>🔔</Text>
-          </TouchableOpacity>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Friends" style={styles.avatarBtn} onPress={() => router.push('/friends')}>
-            <Text style={styles.avatarText}>👥</Text>
-          </TouchableOpacity>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Your profile" style={styles.avatarBtn} onPress={() => router.push('/(tabs)/profile')}>
-            <Text style={styles.avatarText}>{user.display_name.charAt(0).toUpperCase()}</Text>
-          </TouchableOpacity>
+        <View style={styles.welcomeRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.greeting}>GOOD TO SEE YOU, {(user.display_name?.trim() || 'FRIEND').split(/\s+/)[0].toUpperCase()}</Text>
+            <Text style={styles.headline}>Find your people.</Text>
+          </View>
+          <View style={styles.livePill}><View style={styles.liveDot} /><Text style={styles.liveLabel}>{gatherings.length} PLANS</Text></View>
         </View>
       </View>
       <HangoutMap gatherings={gatherings} onSelect={(id: string) => router.push(`/g/${id}`)} />
@@ -159,11 +172,25 @@ export default function MapHome() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, paddingBottom: Spacing.md, zIndex: 10 },
+  header: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs, paddingBottom: Spacing.md, zIndex: 10, backgroundColor: Colors.dark.background },
+  brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  brandLockup: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  brandMark: { width: 36, height: 36, borderRadius: 12, backgroundColor: Colors.dark.primary, alignItems: 'center', justifyContent: 'center' },
+  brandMarkText: { color: Colors.dark.background, fontSize: 20, fontWeight: '900', letterSpacing: -1 },
+  brandName: { color: Colors.dark.text, fontSize: 18, fontWeight: '800', letterSpacing: -0.6 },
+  brandCaption: { color: Colors.dark.textDim, fontSize: 8, fontWeight: '800', letterSpacing: 1.25, marginTop: 1 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+  iconBtn: { width: 38, height: 38, borderRadius: 14, backgroundColor: Colors.dark.surface2, borderWidth: 1, borderColor: Colors.dark.border, alignItems: 'center', justifyContent: 'center' },
+  profileBtn: { width: 38, height: 38, borderRadius: 14, backgroundColor: Colors.dark.primary, alignItems: 'center', justifyContent: 'center', marginLeft: 2 },
+  profileBtnText: { color: Colors.dark.background, fontWeight: '900', fontSize: 15 },
+  welcomeRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: Spacing.lg },
+  greeting: { color: Colors.dark.primary, fontSize: 9, fontWeight: '800', letterSpacing: 1.15, marginBottom: Spacing.xs },
+  headline: { color: Colors.dark.text, fontSize: 28, lineHeight: 32, fontWeight: '800', letterSpacing: -0.8 },
+  livePill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.dark.border, backgroundColor: Colors.dark.surface2, paddingHorizontal: 10, paddingVertical: 7, marginBottom: 2 },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.dark.primary },
+  liveLabel: { color: Colors.dark.textMuted, fontSize: 9, fontWeight: '800', letterSpacing: 0.7 },
   logo: { fontSize: 42, fontWeight: '900', color: Colors.dark.primary, letterSpacing: -1, textAlign: 'center' },
-  avatarBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: Colors.dark.primary, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: Colors.dark.background, fontWeight: '800', fontSize: 16 },
-  filters: { position: 'absolute', top: 118, left: 0, right: 0, zIndex: 5 },
+  filters: { position: 'absolute', top: 140, left: 0, right: 0, zIndex: 5 },
   chip: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, marginRight: Spacing.sm, borderRadius: Radius.full, backgroundColor: Colors.dark.glass, borderWidth: 1, borderColor: Colors.dark.border },
   chipOn: { backgroundColor: Colors.dark.primary, borderColor: Colors.dark.primary },
   chipText: { color: Colors.dark.textMuted, fontSize: 13, fontWeight: '600' },
