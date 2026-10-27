@@ -359,6 +359,7 @@ app.post('/feed', auth, (req, res) => {
   if (body != null && typeof body !== 'string') return res.status(400).json({ error: 'invalid post body' });
   const postBody = (body || '').trim();
   if (!postBody && !media_url) return res.status(400).json({ error: 'empty post' });
+  if (public_consent !== true) return res.status(400).json({ error: 'confirm that you have permission to share this content publicly' });
   if (postBody.length > 1000) return res.status(400).json({ error: 'post is too long' });
   if (media_url != null && (typeof media_url !== 'string' || media_url.length > 14000000 || !['image', 'video'].includes(media_type))) return res.status(400).json({ error: 'invalid or oversized media' });
 
