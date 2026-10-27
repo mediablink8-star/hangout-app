@@ -40,7 +40,7 @@ export default function TabLayout() {
         tabBarBackground: () => (
           <View style={[StyleSheet.absoluteFill, { borderRadius: Radius.xl, overflow: 'hidden' }]}>
             <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(17,23,34,0.55)', borderRadius: Radius.xl, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }]} />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(17,25,20,0.78)', borderRadius: Radius.xl, borderWidth: 1, borderColor: 'rgba(220,246,218,0.12)' }]} />
           </View>
         ),
         tabBarActiveTintColor: c.primary,
@@ -49,10 +49,10 @@ export default function TabLayout() {
         tabBarItemStyle: { paddingTop: 8, paddingBottom: 6 },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Explore', tabBarIcon: ({ color, size }) => <Ionicons name="map" size={size} color={color as string} /> }} />
-      <Tabs.Screen name="messages" options={{ title: 'Messages', tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles" size={size} color={color as string} />, tabBarBadge: badge }} />
-      <Tabs.Screen name="feed" options={{ title: 'Feed', tabBarIcon: ({ color, size }) => <Ionicons name="images" size={size} color={color as string} /> }} />
-      <Tabs.Screen name="profile" options={{ title: 'Me', tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color as string} /> }} />
+      <Tabs.Screen name="index" options={{ title: 'Explore', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "map" : "map-outline"} size={focused ? 22 : 20} color={color as string} /> }} />
+      <Tabs.Screen name="messages" options={{ title: 'Messages', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "chatbubbles" : "chatbubbles-outline"} size={focused ? 22 : 20} color={color as string} />, tabBarBadge: badge }} />
+      <Tabs.Screen name="feed" options={{ title: 'Feed', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "images" : "images-outline"} size={focused ? 22 : 20} color={color as string} /> }} />
+      <Tabs.Screen name="profile" options={{ title: 'Me', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "person-circle" : "person-circle-outline"} size={focused ? 23 : 21} color={color as string} /> }} />
     </Tabs>
   );
 }
