@@ -9,7 +9,7 @@ import { useAuth } from '../../lib/auth';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import HangoutMap from '../../components/HangoutMap';
 import * as Location from 'expo-location';
-import { distanceInKm, IRL_MOODS, IrlMood } from '../../lib/irlMode';
+import { distanceInKm, IRL_MOODS, IrlMood, parseMissionDescription } from '../../lib/irlMode';
 
 const CATS: Category[] = ['coffee', 'study', 'sports', 'outdoors', 'bar', 'party', 'other'];
 
@@ -61,7 +61,7 @@ export default function MapHome() {
       const results = await api.gatherings(q);
       const nearby = irlSearch
         ? results.filter((g: Gathering) => distanceInKm(irlSearch.latitude, irlSearch.longitude, g.lat, g.lng) <= irlSearch.radiusKm)
-          .sort((a: Gathering, b: Gathering) => Number(!!b.challenge) - Number(!!a.challenge))
+          .sort((a: Gathering, b: Gathering) => Number(!!parseMissionDescription(b.description).challenge) - Number(!!parseMissionDescription(a.description).challenge))
         : results;
       if (currentRequest === requestId.current) setGatherings(nearby);
     } catch {
@@ -152,7 +152,7 @@ export default function MapHome() {
             <Text style={[styles.chipText, !cat && styles.chipTextOn]}>All</Text>
           </TouchableOpacity>
           {CATS.map((c) => (
-            <TouchableOpacity key={c} style={[styles.chip, cat === c && styles.chipOn]} onPress={() => setCat(c)}>
+            <TouchableOpacity key={c} style={[styles.chip, cat === c && styles.chipOn]} onPress={() => { setIrlSearch(null); setCat(c); }}>
               <Text style={[styles.chipText, cat === c && styles.chipTextOn]}>{c}</Text>
             </TouchableOpacity>
           ))}
@@ -164,7 +164,7 @@ export default function MapHome() {
         </ScrollView>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing.md, marginTop: Spacing.xs, alignItems: 'center' }}>
           {(['all', 'now', 'today', 'upcoming'] as const).map((t) => (
-            <TouchableOpacity key={t} style={[styles.chip, timeFilter === t && styles.chipOn]} onPress={() => setTimeFilter(t)}>
+            <TouchableOpacity key={t} style={[styles.chip, timeFilter === t && styles.chipOn]} onPress={() => { setIrlSearch(null); setTimeFilter(t); }}>
               <Text style={[styles.chipText, timeFilter === t && styles.chipTextOn]}>{t === 'all' ? 'Any time' : t === 'now' ? 'Happening now' : t === 'today' ? 'Later today' : 'Upcoming'}</Text>
             </TouchableOpacity>
           ))}
@@ -207,11 +207,11 @@ export default function MapHome() {
               <Text style={styles.emptyBtnSecondaryText}>Explore a wider area</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity style={[styles.emptyBtnSecondary, { marginTop: Spacing.sm }]} onPress={() => { setTimeFilter('upcoming'); }}>
+          <TouchableOpacity style={[styles.emptyBtnSecondary, { marginTop: Spacing.sm }]} onPress={() => { setIrlSearch(null); setTimeFilter('upcoming'); }}>
             <Text style={styles.emptyBtnSecondaryText}>View upcoming plans</Text>
           </TouchableOpacity>
-          {(cat || timeFilter !== 'all') && (
-            <TouchableOpacity style={{ marginTop: Spacing.sm, alignSelf: 'center' }} onPress={() => { setCat(null); setTimeFilter('all'); }}>
+          {(cat || timeFilter !== 'all' || irlSearch) && (
+            <TouchableOpacity style={{ marginTop: Spacing.sm, alignSelf: 'center' }} onPress={() => { setCat(null); setTimeFilter('all'); setIrlSearch(null); }}>
               <Text style={{ color: Colors.dark.primary, fontSize: 13, fontWeight: '600' }}>Clear filters</Text>
             </TouchableOpacity>
           )}
@@ -222,7 +222,7 @@ export default function MapHome() {
       </TouchableOpacity>}
       <Modal visible={irlSheet} transparent animationType="slide" onRequestClose={() => setIrlSheet(false)}>
         <View style={styles.sheetBackdrop}>
-          <View style={styles.irlSheet}>
+          <ScrollView style={styles.irlSheet} contentContainerStyle={styles.irlSheetContent} showsVerticalScrollIndicator={false}>
             <View style={styles.sheetHandle} />
             <View style={styles.sheetEyebrow}><Ionicons name="flash" size={14} color={Colors.dark.primary} /><Text style={styles.sheetEyebrowText}>HANGOUT: IRL MODE</Text></View>
             <Text style={styles.sheetTitle}>Less scrolling.{`\n`}More stories.</Text>
@@ -297,14 +297,14 @@ const styles = StyleSheet.create({
   fab: { position: 'absolute', bottom: 96, right: Spacing.lg, backgroundColor: Colors.dark.primary, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, borderRadius: Radius.full },
   fabText: { color: Colors.dark.background, fontWeight: '700', fontSize: 15 },
   sheetBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.64)' },
-  irlSheet: { backgroundColor: Colors.dark.surface, paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.xl, borderTopLeftRadius: 28, borderTopRightRadius: 28, borderWidth: 1, borderColor: Colors.dark.borderStrong },
+  irlSheet: { maxHeight: '92%', backgroundColor: Colors.dark.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, borderWidth: 1, borderColor: Colors.dark.borderStrong },\n  irlSheetContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.xl },
   sheetHandle: { width: 40, height: 4, borderRadius: Radius.full, backgroundColor: Colors.dark.textDim, alignSelf: 'center', marginBottom: Spacing.lg },
   sheetEyebrow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   sheetEyebrowText: { color: Colors.dark.primary, fontSize: 10, fontWeight: '900', letterSpacing: 1.25 },
   sheetTitle: { color: Colors.dark.text, fontSize: 29, lineHeight: 32, fontWeight: '900', letterSpacing: -0.9, marginTop: Spacing.sm },
   sheetSubtitle: { color: Colors.dark.textMuted, fontSize: 13, marginTop: Spacing.xs, marginBottom: Spacing.md },
   moodGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  moodCard: { width: '48%', minHeight: 92, padding: Spacing.md, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.dark.border, backgroundColor: Colors.dark.background },
+  moodCard: { width: '47%', minHeight: 92, padding: Spacing.md, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.dark.border, backgroundColor: Colors.dark.background },
   moodCardOn: { borderColor: Colors.dark.primary, backgroundColor: 'rgba(201,243,106,0.06)' },
   moodTitle: { color: Colors.dark.text, fontWeight: '800', fontSize: 13, marginTop: Spacing.xs },
   moodTitleOn: { color: Colors.dark.primary },
