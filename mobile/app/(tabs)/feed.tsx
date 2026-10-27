@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Alert, ActivityIndicator } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 import VideoPlayer from '../../components/VideoPlayer';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors, Spacing, Radius, Typography } from '../../constants/theme';
-import { api } from '../../lib/api';
+import { api, mediaSource } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 
 interface Post {
@@ -13,6 +12,7 @@ interface Post {
   body: string;
   media_url: string | null;
   media_type: string | null;
+  media_items?: { id: string; content_url: string; media_type: 'image' | 'video' }[];
   created_at: string;
   author: { id: string; display_name: string; avatar_url: string };
   likes: number;
@@ -21,54 +21,31 @@ interface Post {
 
 export default function Feed() {
   const router = useRouter();
+  const { postId } = useLocalSearchParams<{ postId?: string }>();
+  const scrollRef = useRef<ScrollView>(null);
   const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [body, setBody] = useState('');
-  const [media, setMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
   const [posting, setPosting] = useState(false);
+  const [publicShareConfirmed, setPublicShareConfirmed] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setLoadError(false);
     try { setPosts(await api.feed()); }
     catch { setLoadError(true); }
     finally { setLoading(false); }
-  };
-  useEffect(() => { load(); }, []);
-
-  const pickMedia = async (kind: 'image' | 'video') => {
-    try {
-      const res = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: kind === 'image' ? ImagePicker.MediaTypeOptions.Images : ImagePicker.MediaTypeOptions.Videos,
-        quality: 0.6,
-        base64: true,
-      });
-      if (res.canceled) return;
-      const asset = res.assets[0];
-      if (!asset?.base64) {
-        Alert.alert('Couldn’t attach this file', 'Choose another photo or video and try again.');
-        return;
-      }
-      const approximateBytes = asset.fileSize ?? Math.ceil(asset.base64.length * 0.75);
-      if (approximateBytes > 10 * 1024 * 1024) {
-        Alert.alert('File is too large', 'Choose a photo or video under 10 MB.');
-        return;
-      }
-      const type = kind === 'image' ? 'image/jpeg' : 'video/mp4';
-      setMedia({ url: `data:${type};base64,${asset.base64}`, type: kind });
-    } catch {
-      Alert.alert('Couldn’t open your library', 'Check photo access in your device settings and try again.');
-    }
-  };
+  }, []);
+  useFocusEffect(useCallback(() => { load(); return undefined; }, [load]));
 
   const submit = async () => {
-    if (!body.trim() && !media) return;
+    if (!body.trim()) return;
     setPosting(true);
     try {
-      await api.createPost({ body: body.trim(), media_url: media?.url || null, media_type: media?.type || null });
-      setBody(''); setMedia(null);
+      await api.createPost({ body: body.trim(), public_consent: publicShareConfirmed });
+      setBody(''); setPublicShareConfirmed(false);
       await load();
     } catch (e: any) { Alert.alert('Error', e.message); }
     setPosting(false);
@@ -84,6 +61,9 @@ export default function Feed() {
   const del = async (id: string) => {
     try { await api.deletePost(id); setPosts((prev) => prev.filter((p) => p.id !== id)); } catch (e: any) { Alert.alert('Error', e.message); }
   };
+  const requestRemoval = (postId: string, mediaId?: string) => Alert.alert('Report or request removal', 'Tell the moderation team if this post is inappropriate or includes you without permission.', [
+    { text: 'Cancel', style: 'cancel' }, { text: 'Report / request removal', style: 'destructive', onPress: async () => { try { await api.reportFeedMedia(postId, 'I appear in this photo and request review/removal.', mediaId); Alert.alert('Request sent', 'The moderation team can review this post.'); } catch (e: any) { Alert.alert('Could not send request', e.message || 'Please try again.'); } } },
+  ]);
 
   if (!user) {
     return (
@@ -94,7 +74,7 @@ export default function Feed() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 120 }}>
+    <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 120 }}>
       <View style={styles.pageHeader}>
         <View style={styles.kickerRow}><View style={styles.liveDot} /><Text style={styles.kicker}>THE HANGOUT CIRCLE</Text></View>
         <Text style={[Typography.h1, { color: Colors.dark.text }]}>The circle</Text>
@@ -104,16 +84,18 @@ export default function Feed() {
         <Text style={styles.composerTitle}>Share a moment</Text>
         <TextInput accessibilityLabel="Write a post" style={styles.input} placeholder="What’s on your mind?" placeholderTextColor={Colors.dark.textMuted} value={body} onChangeText={setBody} multiline maxLength={1000} />
         <Text style={styles.charCount}>{body.length}/1000</Text>
-        {media && (
-          <View style={styles.preview}>
-            {media.type === 'image' ? <Image source={{ uri: media.url }} style={styles.previewImg} /> : <Text style={{ color: Colors.dark.text }}>Video attached</Text>}
-            <TouchableOpacity onPress={() => setMedia(null)}><Text style={{ color: Colors.dark.danger, marginTop: 4 }}>Remove</Text></TouchableOpacity>
+        <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{ checked: publicShareConfirmed }} onPress={() => setPublicShareConfirmed((v) => !v)} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: Spacing.md, padding: Spacing.md, borderRadius: Radius.md, backgroundColor: Colors.dark.glass, borderWidth: 1, borderColor: publicShareConfirmed ? Colors.dark.primary : Colors.dark.border }}>
+          <View style={{ width: 20, height: 20, borderRadius: 5, borderWidth: 1, borderColor: publicShareConfirmed ? Colors.dark.primary : Colors.dark.textMuted, backgroundColor: publicShareConfirmed ? Colors.dark.primary : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+            {publicShareConfirmed ? <Text style={{ color: Colors.dark.background, fontWeight: '900' }}>✓</Text> : null}
           </View>
-        )}
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: Colors.dark.text, fontSize: 13, fontWeight: '700' }}>I’m ready to share this publicly</Text>
+            <Text style={{ color: Colors.dark.textMuted, fontSize: 12, lineHeight: 17, marginTop: 3 }}>Only post photos you have permission to share. Avoid exposing anyone’s private moments, exact location, or identifying details without their consent.</Text>
+          </View>
+        </TouchableOpacity>
         <View style={{ flexDirection: 'row', marginTop: Spacing.sm, gap: 8 }}>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Add a photo" style={styles.mediaBtn} onPress={() => pickMedia('image')}><Text style={styles.mediaBtnText}>▧  Photo</Text></TouchableOpacity>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Add a video" style={styles.mediaBtn} onPress={() => pickMedia('video')}><Text style={styles.mediaBtnText}>▷  Video</Text></TouchableOpacity>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Publish post" style={[styles.postBtn, (posting || (!body.trim() && !media)) && { opacity: 0.5 }]} onPress={submit} disabled={posting || (!body.trim() && !media)}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Choose a private Memory to share" style={styles.mediaBtn} onPress={() => router.push('/memories' as any)}><Text style={styles.mediaBtnText}>✦  Share a Memory</Text></TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Publish post" style={[styles.postBtn, (posting || !body.trim() || !publicShareConfirmed) && { opacity: 0.5 }]} onPress={submit} disabled={posting || !body.trim() || !publicShareConfirmed}>
             {posting ? <ActivityIndicator color={Colors.dark.background} size="small" /> : <Text style={styles.postBtnText}>Share</Text>}
           </TouchableOpacity>
         </View>
@@ -122,7 +104,7 @@ export default function Feed() {
       {loading && <View accessibilityLiveRegion="polite" style={styles.stateCard}><ActivityIndicator color={Colors.dark.primary} /><Text style={styles.stateText}>Loading the latest posts…</Text></View>}
       {loadError && !loading && <View accessibilityLiveRegion="polite" style={styles.errorCard}><Text style={styles.stateTitle}>Couldn’t refresh the feed</Text><Text style={styles.stateText}>Check your connection and try again.</Text><TouchableOpacity accessibilityRole="button" style={styles.retryBtn} onPress={load}><Text style={styles.retryText}>Try again</Text></TouchableOpacity></View>}
       {posts.map((p) => (
-        <View key={p.id} style={styles.card}>
+        <View key={p.id} onLayout={event => { if (postId && p.id === postId) scrollRef.current?.scrollTo({ y: Math.max(0, event.nativeEvent.layout.y - 10), animated: true }); }} style={[styles.card, p.id === postId && styles.postHighlight]}>
           <View style={styles.authorRow}>
             {p.author.avatar_url ? <Image source={{ uri: p.author.avatar_url }} style={styles.avatar} /> : <View style={styles.avatar} />}
             <View style={{ marginLeft: Spacing.sm, flex: 1 }}>
@@ -134,6 +116,7 @@ export default function Feed() {
             )}
           </View>
           {p.body ? <Text style={[Typography.body, { color: Colors.dark.text, marginTop: Spacing.sm }]}>{p.body}</Text> : null}
+          {p.media_items?.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginTop: Spacing.md }}>{p.media_items.map(item => <View key={item.id} style={{ width: 240 }}>{item.media_type === 'image' ? <Image source={mediaSource(item.content_url)} style={[styles.media, { width: 240, height: 220, marginTop: 0 }]} resizeMode="cover" accessibilityLabel="Shared Hangout Memory photo" /> : <VideoPlayer uri={mediaSource(item.content_url).uri} headers={mediaSource(item.content_url).headers} style={[styles.media, { width: 240, height: 220, marginTop: 0 }]} />}<TouchableOpacity accessibilityRole="button" onPress={() => requestRemoval(p.id, item.id)} style={{ padding: 9, backgroundColor: Colors.dark.surface2, borderBottomLeftRadius: Radius.md, borderBottomRightRadius: Radius.md }}><Text style={{ color: Colors.dark.textMuted, fontSize: 11, textAlign: 'center' }}>Report media · request removal</Text></TouchableOpacity></View>)}</ScrollView> : null}
           {p.media_url && p.media_type === 'image' && <Image source={{ uri: p.media_url }} style={styles.media} resizeMode="cover" />}
           {p.media_url && p.media_type === 'video' && <VideoPlayer uri={p.media_url} style={styles.media} />}
           <View style={styles.actions}>
@@ -142,6 +125,7 @@ export default function Feed() {
                 {p.liked ? '♥' : '♡'} {p.likes}
               </Text>
             </TouchableOpacity>
+            {p.user_id !== user.id && <TouchableOpacity accessibilityRole="button" onPress={() => requestRemoval(p.id)}><Text style={{ color: Colors.dark.textMuted, fontSize: 12 }}>Report</Text></TouchableOpacity>}
           </View>
         </View>
       ))}
@@ -184,6 +168,7 @@ const styles = StyleSheet.create({
   postBtn: { backgroundColor: Colors.dark.primary, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, borderRadius: Radius.md, marginLeft: 'auto' },
   postBtnText: { color: Colors.dark.background, fontWeight: '700' },
   card: { backgroundColor: Colors.dark.surface, padding: Spacing.lg, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.dark.border, marginBottom: Spacing.md },
+  postHighlight: { borderColor: Colors.dark.primary, borderWidth: 2 },
   authorRow: { flexDirection: 'row', alignItems: 'center' },
   avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.dark.glass, borderWidth: 1, borderColor: Colors.dark.border },
   media: { width: '100%', height: 240, borderRadius: Radius.md, marginTop: Spacing.sm, backgroundColor: Colors.dark.glass },

@@ -110,6 +110,15 @@ export default function GatheringDetail() {
         </TouchableOpacity>
       )}
 
+      {(g.host_id === user?.id || g.my_request_status === 'approved') && (
+        <TouchableOpacity accessibilityRole="button" style={[styles.btn, { backgroundColor: Colors.dark.surface2, borderWidth: 1, borderColor: Colors.dark.primary, marginTop: Spacing.md }]} onPress={async () => {
+          try { const memory = await api.getOrCreateMemory(id!); router.push(`/memories/${memory.id}` as any); }
+          catch (e: any) { Alert.alert('Memory unavailable', e.message || 'Please try again.'); }
+        }}>
+          <Text style={[styles.btnText, { color: Colors.dark.primary }]}>Open private Memory</Text>
+        </TouchableOpacity>
+      )}
+
       <Text style={[Typography.h3, { color: Colors.dark.text, marginTop: Spacing.xl }]}>Chat</Text>
       {msgs.map((m) => (
         <View key={m.id} style={styles.msg}>

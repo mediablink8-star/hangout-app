@@ -5,11 +5,12 @@ import { Colors } from '../constants/theme';
 
 interface Props {
   uri: string;
+  headers?: Record<string, string>;
   style?: any;
 }
 
-export default function VideoPlayer({ uri, style }: Props) {
-  const player = useVideoPlayer(uri, (p) => {
+export default function VideoPlayer({ uri, headers, style }: Props) {
+  const player = useVideoPlayer({ uri, headers }, (p) => {
     p.loop = false;
   });
   return (

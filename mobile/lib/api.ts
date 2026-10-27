@@ -14,6 +14,8 @@ export async function restoreToken() {
   return token;
 }
 export function getToken() { return token; }
+const MEDIA_BASE = process.env.EXPO_PUBLIC_API_URL || (Platform.OS === 'android' ? 'http://10.0.2.2:4000' : 'http://localhost:4000');
+export function mediaSource(path: string) { return { uri: MEDIA_BASE + path, headers: token ? { Authorization: 'Bearer ' + token } : {} }; }
 
 async function request(path: string, opts: RequestInit = {}) {
   if (!__DEV__ && !BASE.startsWith('https://')) throw new Error('This production build needs a secure HTTPS API URL.');
@@ -59,6 +61,13 @@ export const api = {
   myGatherings: () => request('/me/gatherings'),
   feed: (userId?: string) => request('/feed' + (userId ? '?user_id=' + encodeURIComponent(userId) : '')),
   createPost: (b: any) => request('/feed', { method: 'POST', body: JSON.stringify(b) }),
+  getOrCreateMemory: (gatheringId: string) => request('/gatherings/' + gatheringId + '/memory', { method: 'POST' }),
+  memories: () => request('/memories'),
+  memory: (id: string, cursor?: string) => request('/memories/' + id + (cursor ? '?cursor=' + encodeURIComponent(cursor) : '')),
+  uploadMemoryMedia: (id: string, data: string, caption = '') => request('/memories/' + id + '/uploads', { method: 'POST', body: JSON.stringify({ data, caption }) }),
+  deleteMemoryMedia: (id: string, mediaId: string) => request('/memories/' + id + '/media/' + mediaId, { method: 'DELETE' }),
+  publishMemory: (id: string, b: { media_ids: string[]; caption: string; public_consent: boolean; consent_version: string }, key: string) => request('/memories/' + id + '/publish', { method: 'POST', headers: { 'Idempotency-Key': key }, body: JSON.stringify(b) }),
+  reportFeedMedia: (postId: string, reason: string, mediaId?: string) => request('/feed/' + postId + '/report', { method: 'POST', body: JSON.stringify({ reason, media_id: mediaId }) }),
   deletePost: (id: string) => request('/feed/' + id, { method: 'DELETE' }),
   likePost: (id: string) => request('/feed/' + id + '/like', { method: 'POST' }),
   unlikePost: (id: string) => request('/feed/' + id + '/like', { method: 'DELETE' }),
