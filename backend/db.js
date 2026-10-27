@@ -38,7 +38,7 @@ function openDb() {
       description TEXT DEFAULT '',
       start_time TEXT NOT NULL,
       end_time TEXT NOT NULL,
-      max_guests INTEGER NOT NULL DEFAULT 10,
+      max_guests INTEGER NOT NULL DEFAULT 10,\n      challenge TEXT NOT NULL DEFAULT '',\n      mission_mode INTEGER NOT NULL DEFAULT 0,
       lat_exact REAL NOT NULL,
       lng_exact REAL NOT NULL,
       address TEXT NOT NULL,
@@ -168,6 +168,24 @@ function openDb() {
     lng REAL NOT NULL,
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );`);
+  // IRL Mode migrations and social proof.
+  try { db.exec("ALTER TABLE gatherings ADD COLUMN challenge TEXT NOT NULL DEFAULT ''"); } catch (e) {}
+  try { db.exec("ALTER TABLE gatherings ADD COLUMN mission_mode INTEGER NOT NULL DEFAULT 0"); } catch (e) {}
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS gathering_attendance (
+      gathering_id TEXT NOT NULL REFERENCES gatherings(id),
+      user_id TEXT NOT NULL REFERENCES profiles(id),
+      confirmed_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (gathering_id, user_id)
+    );
+    CREATE TABLE IF NOT EXISTS gathering_recaps (
+      id TEXT PRIMARY KEY,
+      gathering_id TEXT NOT NULL REFERENCES gatherings(id),
+      creator_id TEXT NOT NULL REFERENCES profiles(id),
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE (gathering_id, creator_id)
+    );
+  `);
   // migration: messages columns
   for (const c of ['conversation_id','is_system']) {
     try { db.exec(`ALTER TABLE messages ADD COLUMN ${c} ${c==='is_system'?'INTEGER NOT NULL DEFAULT 0':'TEXT'}`); } catch (e) {}
@@ -254,6 +272,7 @@ function publicGathering(row, requesterId, db) {
   const base = {
     id: row.id, host_id: row.host_id, title: row.title, category: row.category,
     description: row.description, start_time: row.start_time, end_time: row.end_time,
+    challenge: row.challenge || '', mission_mode: !!row.mission_mode,
     max_guests: row.max_guests, visibility: row.visibility, created_at: row.created_at,
     cancelled_at: row.cancelled_at, lat: row.lat_fuzz, lng: row.lng_fuzz, address: null,
     exact: false,
