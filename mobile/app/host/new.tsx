@@ -189,7 +189,7 @@ export default function HostNew() {
             </View>
             <View style={styles.safetyNote}>
               <Text style={styles.safetyMark}>✦</Text>
-              <Text style={styles.safetyText}>Show the activity, time, and approximate area up front. Keep the exact meeting place public and familiar, and share it only with approved guests.</Text>
+              <Text style={styles.safetyText}>Show the activity, time, and approximate area before people join. Choose a familiar public venue, then share its exact address only with approved guests.</Text>
             </View>
           </View>
 
