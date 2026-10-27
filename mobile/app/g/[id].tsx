@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors, Spacing, Radius, Typography } from '../../constants/theme';
 import { api } from '../../lib/api';
 import { Gathering, Message, JoinRequest } from '../../lib/types';
-import { Share, Alert, TextInput, Platform } from 'react-native';
+import { Share, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth';
 import { parseMissionDescription } from '../../lib/irlMode';
