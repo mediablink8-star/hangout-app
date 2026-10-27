@@ -28,10 +28,10 @@ export default function TabLayout() {
         headerShown: false,
         tabBarStyle: {
           position: 'absolute',
-          bottom: Platform.OS === 'ios' ? 28 : 16,
+          bottom: Platform.OS === 'ios' ? 22 : 12,
           left: 20,
           right: 20,
-          height: 64,
+          height: 70,
           borderRadius: Radius.xl,
           backgroundColor: 'transparent',
           borderTopWidth: 0,
@@ -45,8 +45,8 @@ export default function TabLayout() {
         ),
         tabBarActiveTintColor: c.primary,
         tabBarInactiveTintColor: c.textMuted,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: 2 },
-        tabBarItemStyle: { paddingVertical: 6 },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginTop: 1, letterSpacing: 0.2 },
+        tabBarItemStyle: { paddingTop: 8, paddingBottom: 6 },
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Explore', tabBarIcon: ({ color, size }) => <Ionicons name="map" size={size} color={color as string} /> }} />
