@@ -162,6 +162,9 @@ function openDb() {
   try { db.exec('ALTER TABLE profiles ADD COLUMN profile_public INTEGER NOT NULL DEFAULT 1'); } catch (e) {}
   try { db.exec('ALTER TABLE profiles ADD COLUMN username TEXT'); } catch (e) {}
   try { db.exec('ALTER TABLE profiles ADD COLUMN share_location INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+  try { db.exec('ALTER TABLE posts ADD COLUMN source_gathering_id TEXT REFERENCES gatherings(id)'); } catch (e) {}
+  try { db.exec('ALTER TABLE posts ADD COLUMN public_consent_at TEXT'); } catch (e) {}
+  try { db.exec('ALTER TABLE posts ADD COLUMN public_consent_version TEXT'); } catch (e) {}
   db.exec(`CREATE TABLE IF NOT EXISTS live_locations (
     user_id TEXT PRIMARY KEY REFERENCES profiles(id),
     lat REAL NOT NULL,
