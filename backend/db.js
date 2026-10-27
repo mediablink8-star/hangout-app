@@ -199,18 +199,44 @@ function openDb() {
 }
 
 function uid() { return crypto.randomUUID(); }
-function hashPw(pw) { return crypto.createHash('sha256').update(pw).digest('hex'); }
+const TOKEN_SECRET = process.env.TOKEN_SECRET || (process.env.NODE_ENV === 'production' ? '' : crypto.randomBytes(32).toString('hex'));
+if (!TOKEN_SECRET) throw new Error('TOKEN_SECRET must be set in production');
+
+function hashPw(pw) {
+  const salt = crypto.randomBytes(16);
+  const derived = crypto.scryptSync(String(pw), salt, 64);
+  return 'scrypt$' + salt.toString('hex') + '$' + derived.toString('hex');
+}
+function verifyPw(pw, stored) {
+  if (!stored) return false;
+  if (stored.startsWith('scrypt$')) {
+    const [, saltHex, hashHex] = stored.split('$');
+    if (!saltHex || !hashHex) return false;
+    const expected = Buffer.from(hashHex, 'hex');
+    const actual = crypto.scryptSync(String(pw), Buffer.from(saltHex, 'hex'), expected.length);
+    return expected.length === actual.length && crypto.timingSafeEqual(actual, expected);
+  }
+  const legacy = crypto.createHash('sha256').update(String(pw)).digest('hex');
+  const actual = Buffer.from(legacy);
+  const expected = Buffer.from(stored);
+  return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
+}
 function tokenFor(userId) {
-  const payload = Buffer.from(JSON.stringify({ uid: userId, iat: Date.now() })).toString('base64url');
-  const sig = crypto.createHmac('sha256', 'dev-secret').update(payload).digest('base64url');
+  const now = Math.floor(Date.now() / 1000);
+  const payload = Buffer.from(JSON.stringify({ uid: userId, iat: now, exp: now + 30 * 24 * 60 * 60 })).toString('base64url');
+  const sig = crypto.createHmac('sha256', TOKEN_SECRET).update(payload).digest('base64url');
   return payload + '.' + sig;
 }
 function verifyToken(tok) {
   const [payload, sig] = (tok || '').split('.');
   if (!payload || !sig) return null;
-  const expected = crypto.createHmac('sha256', 'dev-secret').update(payload).digest('base64url');
-  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
-  try { return JSON.parse(Buffer.from(payload, 'base64url').toString()).uid; } catch { return null; }
+  const expected = Buffer.from(crypto.createHmac('sha256', TOKEN_SECRET).update(payload).digest('base64url'));
+  const actual = Buffer.from(sig);
+  if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) return null;
+  try {
+    const decoded = JSON.parse(Buffer.from(payload, 'base64url').toString());
+    return decoded.uid && decoded.exp > Math.floor(Date.now() / 1000) ? decoded.uid : null;
+  } catch { return null; }
 }
 
 // fuzz a coordinate to ~300m circle (0.0027 deg ~ 300m)
@@ -238,4 +264,4 @@ function publicGathering(row, requesterId, db) {
   return base;
 }
 
-module.exports = { openDb, uid, hashPw, tokenFor, verifyToken, fuzzCoord, isApprovedMember, publicGathering, DB_PATH };
+module.exports = { openDb, uid, hashPw, verifyPw, tokenFor, verifyToken, fuzzCoord, isApprovedMember, publicGathering, DB_PATH };

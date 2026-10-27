@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: hangout-api
+    runtime: node
+    plan: starter
+    region: oregon
+    branch: main
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    disk:
+      name: hangout-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_PATH
+        value: /var/data/hangout.db
+      - key: TOKEN_SECRET
+        generateValue: true

@@ -1,18 +1,29 @@
+import { Platform } from 'react-native';
 import { Gathering, Profile, JoinRequest, Message } from './types';
+import { readToken, writeToken } from './tokenStorage';
 
-const BASE = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:4000';
+const BASE = process.env.EXPO_PUBLIC_API_URL || (Platform.OS === 'android' ? 'http://10.0.2.2:4000' : 'http://localhost:4000');
 
 let token: string | null = null;
-export function setToken(t: string | null) { token = t; }
+export async function setToken(t: string | null) {
+  await writeToken(t);
+  token = t;
+}
+export async function restoreToken() {
+  token = await readToken();
+  return token;
+}
 export function getToken() { return token; }
 
 async function request(path: string, opts: RequestInit = {}) {
+  if (!__DEV__ && !BASE.startsWith('https://')) throw new Error('This production build needs a secure HTTPS API URL.');
   const res = await fetch(BASE + path, {
     ...opts,
     headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}), ...(opts.headers || {}) },
   });
   const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
+  let data: any = null;
+  try { data = text ? JSON.parse(text) : null; } catch { /* non-JSON error response */ }
   if (!res.ok) throw new Error(data?.error || res.statusText);
   return data;
 }

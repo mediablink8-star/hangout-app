@@ -40,9 +40,26 @@ export default function Profile() {
   }, [user]);
 
   const pickAvatar = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.5, base64: true });
-    if (!res.canceled && res.assets[0].base64) {
-      setAvatar('data:image/jpeg;base64,' + res.assets[0].base64);
+    try {
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.5,
+        base64: true,
+      });
+      if (res.canceled) return;
+      const asset = res.assets[0];
+      if (!asset?.base64) {
+        Alert.alert('Couldn’t attach this photo', 'Choose another image and try again.');
+        return;
+      }
+      const approximateBytes = asset.fileSize ?? Math.ceil(asset.base64.length * 0.75);
+      if (approximateBytes > 10 * 1024 * 1024) {
+        Alert.alert('Photo is too large', 'Choose an image under 10 MB.');
+        return;
+      }
+      setAvatar('data:image/jpeg;base64,' + asset.base64);
+    } catch {
+      Alert.alert('Couldn’t open your library', 'Check photo access in your device settings and try again.');
     }
   };
 

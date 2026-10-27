@@ -1,9 +1,16 @@
 const express = require('express');
 const cors = require('cors');
-const { openDb, uid, hashPw, tokenFor, verifyToken, fuzzCoord, isApprovedMember, publicGathering } = require('./db');
+const { openDb, uid, hashPw, verifyPw, tokenFor, verifyToken, fuzzCoord, isApprovedMember, publicGathering } = require('./db');
 
 const app = express();
-app.use((req, res, next) => { res.setHeader('X-Content-Type-Options', 'nosniff'); next(); });
+app.set('trust proxy', 1);
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
 // simple in-memory rate limit for message sends
 async function sendPush(userIds, title, body, data) {
   try {
@@ -18,6 +25,24 @@ async function sendPush(userIds, title, body, data) {
   } catch (e) { console.error('push send failed', e.message); }
 }
 const msgRate = new Map();
+const authAttempts = new Map();
+const AUTH_WINDOW_MS = 15 * 60 * 1000;
+function limitAuth(req, res, next) {
+  const now = Date.now();
+  const key = req.ip || req.socket.remoteAddress || 'unknown';
+  let attempt = authAttempts.get(key);
+  if (!attempt || now - attempt.startedAt >= AUTH_WINDOW_MS) attempt = { startedAt: now, count: 0 };
+  attempt.count += 1;
+  authAttempts.set(key, attempt);
+  if (authAttempts.size > 10000) {
+    for (const [ip, entry] of authAttempts) if (now - entry.startedAt >= AUTH_WINDOW_MS) authAttempts.delete(ip);
+  }
+  if (attempt.count > 20) {
+    res.setHeader('Retry-After', Math.ceil((attempt.startedAt + AUTH_WINDOW_MS - now) / 1000));
+    return res.status(429).json({ error: 'too many authentication attempts' });
+  }
+  next();
+}
 function rateLimitMsg(userId) {
   const now = Date.now();
   const arr = (msgRate.get(userId) || []).filter((t) => now - t < 60000);
@@ -26,16 +51,24 @@ function rateLimitMsg(userId) {
   msgRate.set(userId, arr);
   return true;
 }
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
+const allowedOrigins = (process.env.CORS_ORIGINS || '').split(',').map((origin) => origin.trim()).filter(Boolean);
+app.use(cors({ origin(origin, callback) {
+  const localDevOrigin = process.env.NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin || '');
+  callback(null, !origin || allowedOrigins.includes(origin) || localDevOrigin);
+} }));
+app.use(express.json({ limit: '15mb' }));
 
 const db = openDb();
+app.get('/health', (_req, res) => {
+  try { db.prepare('SELECT 1').get(); res.json({ status: 'ok' }); }
+  catch { res.status(503).json({ status: 'unavailable' }); }
+});
 
 function auth(req, res, next) {
   const tok = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   const uid2 = verifyToken(tok);
   if (!uid2) return res.status(401).json({ error: 'unauthorized' });
-  const prof = db.prepare('SELECT * FROM profiles WHERE id = ?').get(uid2);
+  const prof = db.prepare('SELECT id,email,display_name,birth_date,bio,avatar_url,username,profile_public,share_location,is_admin,is_founding_host,created_at FROM profiles WHERE id = ?').get(uid2);
   if (!prof) return res.status(401).json({ error: 'unauthorized' });
   req.userId = uid2;
   req.profile = prof;
@@ -43,26 +76,35 @@ function auth(req, res, next) {
 }
 
 // ---- auth ----
-app.post('/auth/signup', (req, res) => {
+app.post('/auth/signup', limitAuth, (req, res) => {
   const { email, password, display_name, birth_date, bio, avatar_url } = req.body || {};
   if (!email || !password || !display_name || !birth_date) return res.status(400).json({ error: 'missing fields' });
-  // age check in code too
-  const age = (Date.now() - new Date(birth_date).getTime()) / (365.25 * 24 * 3600 * 1000);
+  if (typeof email !== 'string' || typeof password !== 'string' || typeof display_name !== 'string') return res.status(400).json({ error: 'invalid fields' });
+  if (password.length < 8 || password.length > 128) return res.status(400).json({ error: 'password must be 8-128 characters' });
+  if (display_name.trim().length < 1 || display_name.trim().length > 60) return res.status(400).json({ error: 'display name must be 1-60 characters' });
+  const normalizedEmail = email.trim().toLowerCase();
+  if (normalizedEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) return res.status(400).json({ error: 'invalid email' });
+  const birthDate = new Date(birth_date);
+  if (Number.isNaN(birthDate.getTime())) return res.status(400).json({ error: 'invalid birth date' });
+  const age = (Date.now() - birthDate.getTime()) / (365.25 * 24 * 3600 * 1000);
   if (age < 18 || age >= 30) return res.status(400).json({ error: 'age must be 18-29' });
   const id = uid();
   try {
     db.prepare('INSERT INTO profiles (id,email,password_hash,display_name,birth_date,bio,avatar_url) VALUES (?,?,?,?,?,?,?)')
-      .run(id, email, hashPw(password), display_name, birth_date, bio || '', avatar_url || '');
+      .run(id, normalizedEmail, hashPw(password), display_name.trim(), birthDate.toISOString().slice(0, 10), bio || '', avatar_url || '');
   } catch (e) {
     return res.status(400).json({ error: 'email taken or invalid' });
   }
   res.json({ token: tokenFor(id), user: { id, email, display_name } });
 });
 
-app.post('/auth/signin', (req, res) => {
+app.post('/auth/signin', limitAuth, (req, res) => {
   const { email, password } = req.body || {};
-  const p = db.prepare('SELECT * FROM profiles WHERE email = ?').get(email);
-  if (!p || p.password_hash !== hashPw(password)) return res.status(401).json({ error: 'invalid credentials' });
+  if (typeof email !== 'string' || typeof password !== 'string' || password.length > 128) return res.status(401).json({ error: 'invalid credentials' });
+  const normalizedEmail = email.trim().toLowerCase();
+  const p = db.prepare('SELECT * FROM profiles WHERE email = ? OR lower(email) = ? ORDER BY CASE WHEN email = ? THEN 0 ELSE 1 END LIMIT 1').get(email.trim(), normalizedEmail, email.trim());
+  if (!p || !verifyPw(password, p.password_hash)) return res.status(401).json({ error: 'invalid credentials' });
+  if (!p.password_hash.startsWith('scrypt$')) db.prepare('UPDATE profiles SET password_hash = ? WHERE id = ?').run(hashPw(password), p.id);
   res.json({ token: tokenFor(p.id), user: { id: p.id, email: p.email, display_name: p.display_name } });
 });
 
@@ -84,7 +126,7 @@ app.post('/me/location', auth, (req, res) => {
   const { lat, lng } = req.body || {};
   const p = db.prepare('SELECT share_location FROM profiles WHERE id = ?').get(req.userId);
   if (!p || !p.share_location) return res.status(403).json({ error: 'location sharing disabled' });
-  if (lat == null || lng == null) return res.status(400).json({ error: 'lat/lng required' });
+  if (typeof lat !== 'number' || typeof lng !== 'number' || !Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) return res.status(400).json({ error: 'valid lat/lng required' });
   db.prepare('INSERT INTO live_locations (user_id, lat, lng, updated_at) VALUES (?,?,?,datetime(\'now\')) ON CONFLICT(user_id) DO UPDATE SET lat=excluded.lat, lng=excluded.lng, updated_at=datetime(\'now\')').run(req.userId, lat, lng);
   res.json({ ok: true });
 });
@@ -104,15 +146,16 @@ app.patch('/me', auth, (req, res) => {
   const { display_name, bio, avatar_url, username, profile_public, share_location } = req.body || {};
   db.prepare('UPDATE profiles SET display_name=COALESCE(?,display_name), bio=COALESCE(?,bio), avatar_url=COALESCE(?,avatar_url), username=COALESCE(?,username), profile_public=COALESCE(?,profile_public), share_location=COALESCE(?,share_location) WHERE id=?')
     .run(display_name ?? null, bio ?? null, avatar_url ?? null, username ?? null, profile_public == null ? null : (profile_public ? 1 : 0), share_location == null ? null : (share_location ? 1 : 0), req.userId);
-  res.json(db.prepare('SELECT * FROM profiles WHERE id = ?').get(req.userId));
+  res.json(db.prepare('SELECT id,email,display_name,birth_date,bio,avatar_url,username,profile_public,share_location,is_admin,is_founding_host,created_at FROM profiles WHERE id = ?').get(req.userId));
 });
 app.get('/u/:id', auth, (req, res) => {
-  const p = db.prepare('SELECT id,display_name,bio,avatar_url,created_at,is_founding_host FROM profiles WHERE id = ?').get(req.params.id);
-  if (!p) return res.status(404).json({ error: 'not found' });
+  const p = db.prepare('SELECT id,display_name,bio,avatar_url,created_at,is_founding_host,profile_public FROM profiles WHERE id = ?').get(req.params.id);
+  if (!p || (!p.profile_public && req.params.id !== req.userId)) return res.status(404).json({ error: 'not found' });
   // gatherings hosted/attending
   const hosted = db.prepare('SELECT id,title,category,start_time FROM gatherings WHERE host_id = ? AND cancelled_at IS NULL').all(req.params.id);
   const attending = db.prepare(`SELECT g.id,g.title,g.category,g.start_time FROM gatherings g JOIN join_requests r ON r.gathering_id=g.id WHERE r.user_id=? AND r.status='approved'`).all(req.params.id);
-  res.json({ ...p, hosted, attending });
+  const { profile_public, ...publicProfile } = p;
+  res.json({ ...publicProfile, hosted, attending });
 });
 
 // ---- gatherings ----
@@ -155,11 +198,22 @@ app.get('/gatherings/:id', auth, (req, res) => {
 
 app.post('/gatherings', auth, (req, res) => {
   const { title, category, description, start_time, end_time, max_guests, lat, lng, address, visibility } = req.body || {};
-  if (!title || !category || !start_time || !end_time || lat == null || lng == null || !address) return res.status(400).json({ error: 'missing fields' });
+  if (typeof title !== 'string' || !title.trim() || title.trim().length > 80) return res.status(400).json({ error: 'title must be 1-80 characters' });
+  const categories = ['coffee', 'study', 'sports', 'outdoors', 'bar', 'party', 'other'];
+  if (!categories.includes(category)) return res.status(400).json({ error: 'invalid category' });
+  const startDate = new Date(start_time), endDate = new Date(end_time);
+  if (!start_time || !end_time || Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate <= startDate) return res.status(400).json({ error: 'end time must be after a valid start time' });
+  if (typeof lat !== 'number' || !Number.isFinite(lat) || lat < -90 || lat > 90 || typeof lng !== 'number' || !Number.isFinite(lng) || lng < -180 || lng > 180) return res.status(400).json({ error: 'valid map location required' });
+  if (typeof address !== 'string' || !address.trim() || address.trim().length > 500) return res.status(400).json({ error: 'address must be 1-500 characters' });
+  if (description != null && (typeof description !== 'string' || description.length > 2000)) return res.status(400).json({ error: 'description must be at most 2000 characters' });
+  const guestLimit = max_guests == null ? 10 : Number(max_guests);
+  if (!Number.isInteger(guestLimit) || guestLimit < 1 || guestLimit > 100) return res.status(400).json({ error: 'capacity must be between 1 and 100' });
+  const safeVisibility = visibility == null ? 'approval' : visibility;
+  if (!['approval', 'public'].includes(safeVisibility)) return res.status(400).json({ error: 'invalid visibility' });
   const id = uid();
   const latF = fuzzCoord(lat), lngF = fuzzCoord(lng);
   db.prepare('INSERT INTO gatherings (id,host_id,title,category,description,start_time,end_time,max_guests,lat_exact,lng_exact,address,lat_fuzz,lng_fuzz,visibility) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
-    .run(id, req.userId, title, category, description || '', start_time, end_time, max_guests || 10, lat, lng, address, latF, lngF, visibility || 'approval');
+    .run(id, req.userId, title.trim(), category, (description || '').trim(), startDate.toISOString(), endDate.toISOString(), guestLimit, lat, lng, address.trim(), latF, lngF, safeVisibility);
   // create conversation + add host
   const cid = uid();
   db.prepare('INSERT INTO conversations (id,type,gathering_id,title) VALUES (?,?,?,?)').run(cid, 'gathering', id, title);
@@ -302,9 +356,13 @@ app.get('/feed', auth, (req, res) => {
 
 app.post('/feed', auth, (req, res) => {
   const { body, media_url, media_type } = req.body || {};
-  if (!body && !media_url) return res.status(400).json({ error: 'empty post' });
+  if (body != null && typeof body !== 'string') return res.status(400).json({ error: 'invalid post body' });
+  const postBody = (body || '').trim();
+  if (!postBody && !media_url) return res.status(400).json({ error: 'empty post' });
+  if (postBody.length > 1000) return res.status(400).json({ error: 'post is too long' });
+  if (media_url != null && (typeof media_url !== 'string' || media_url.length > 14000000 || !['image', 'video'].includes(media_type))) return res.status(400).json({ error: 'invalid or oversized media' });
   const id = uid();
-  db.prepare('INSERT INTO posts (id,user_id,body,media_url,media_type) VALUES (?,?,?,?,?)').run(id, req.userId, body || '', media_url || null, media_type || null);
+  db.prepare('INSERT INTO posts (id,user_id,body,media_url,media_type) VALUES (?,?,?,?,?)').run(id, req.userId, postBody, media_url || null, media_type || null);
   res.status(201).json({ id });
 });
 
