@@ -11,12 +11,14 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator } from 'react-native';
 import { Colors, Radius, Spacing, Typography } from '../../constants/theme';
 import { api } from '../../lib/api';
 import { Category } from '../../lib/types';
 import MapPicker from '../../components/MapPicker';
+import { encodeMissionDescription, MISSION_CHALLENGES } from '../../lib/irlMode';
 
 const CATS: Category[] = ['coffee', 'study', 'sports', 'outdoors', 'bar', 'party', 'other'];
 
@@ -48,10 +50,13 @@ function parseLocalDateTime(date: string, time: string) {
 
 export default function HostNew() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ mission?: string }>();
   const initial = defaultSchedule();
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<Category>('coffee');
   const [description, setDescription] = useState('');
+  const [missionMode, setMissionMode] = useState(params.mission === '1');
+  const [challenge, setChallenge] = useState(params.mission === '1' ? MISSION_CHALLENGES[0] : '');
   const [startDate, setStartDate] = useState(initial.startDate);
   const [startTime, setStartTime] = useState(initial.startTime);
   const [endDate, setEndDate] = useState(initial.endDate);
@@ -71,14 +76,16 @@ export default function HostNew() {
     if (endsAt <= startsAt) return Alert.alert('Check the schedule', 'The end time must be after the start time.');
     if (!/^\d+$/.test(maxGuests) || Number(maxGuests) < 1 || Number(maxGuests) > 100) return Alert.alert('Check capacity', 'Choose a whole number from 1 to 100.');
     if (!address.trim()) return Alert.alert('Add a meeting address', 'The exact address is shared with approved guests.');
-    if (title.trim().length > 80 || description.trim().length > 2000) return Alert.alert('Shorten the details', 'Titles can be 80 characters and descriptions 2,000 characters.');
+    const missionDescription = encodeMissionDescription(description, challenge, missionMode);
+    if (missionMode && !challenge.trim()) return Alert.alert('Choose a mission challenge', 'Pick one small, friendly challenge for the group.');
+    if (title.trim().length > 80 || missionDescription.length > 2000) return Alert.alert('Shorten the details', 'Titles can be 80 characters and the full description, including mission details, must stay under 2,000 characters.');
 
     setSubmitting(true);
     try {
       const gathering = await api.createGathering({
         title: title.trim(),
         category,
-        description: description.trim(),
+        description: missionDescription,
         start_time: startsAt.toISOString(),
         end_time: endsAt.toISOString(),
         max_guests: Number(maxGuests),
@@ -148,6 +155,42 @@ export default function HostNew() {
               textAlignVertical="top"
             />
             <Text style={styles.counter}>{description.length}/2000</Text>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Add a mission</Text>
+            <Text style={styles.hint}>Give the group one playful reason to break the ice. Joining stays completely optional.</Text>
+            <TouchableOpacity
+              accessibilityRole="switch"
+              accessibilityState={{ checked: missionMode }}
+              style={[styles.missionToggle, missionMode && styles.missionToggleOn]}
+              onPress={() => setMissionMode(value => !value)}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.visibilityTitle}>Mystery mission</Text>
+                <Text style={styles.visibilityCopy}>Reveal a friendly challenge, never a surprise destination.</Text>
+              </View>
+              <Ionicons name={missionMode ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={missionMode ? Colors.dark.primary : Colors.dark.textDim} />
+            </TouchableOpacity>
+            <Text style={[styles.label, styles.labelTop]}>Choose a challenge <Text style={styles.optional}>OPTIONAL</Text></Text>
+            <View style={styles.missionChoices}>
+              {MISSION_CHALLENGES.map((item) => (
+                <TouchableOpacity
+                  key={item}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: challenge === item }}
+                  style={[styles.challengeCard, challenge === item && styles.challengeCardOn]}
+                  onPress={() => setChallenge(challenge === item ? '' : item)}
+                >
+                  <Ionicons name={challenge === item ? 'checkmark-circle' : 'sparkles-outline'} size={18} color={challenge === item ? Colors.dark.primary : Colors.dark.textDim} />
+                  <Text style={[styles.challengeText, challenge === item && styles.challengeTextOn]}>{item}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={styles.safetyNote}>
+              <Text style={styles.safetyMark}>✦</Text>
+              <Text style={styles.safetyText}>Show the activity, time, and approximate area up front. Keep the exact meeting place public and familiar, and share it only with approved guests.</Text>
+            </View>
           </View>
 
           <View style={styles.section}>
@@ -265,6 +308,13 @@ const styles = StyleSheet.create({
   chipOn: { backgroundColor: Colors.dark.primary, borderColor: Colors.dark.primary },
   chipText: { color: Colors.dark.textMuted, fontSize: 13, fontWeight: '600' },
   chipTextOn: { color: Colors.dark.background },
+  missionToggle: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.dark.background, padding: Spacing.md, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.dark.border, marginTop: Spacing.sm },
+  missionToggleOn: { borderColor: Colors.dark.primary, backgroundColor: 'rgba(201,243,106,0.06)' },
+  missionChoices: { gap: Spacing.sm, marginTop: Spacing.sm },
+  challengeCard: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, backgroundColor: Colors.dark.background, borderWidth: 1, borderColor: Colors.dark.border, padding: Spacing.md, borderRadius: Radius.md },
+  challengeCardOn: { borderColor: Colors.dark.primary, backgroundColor: 'rgba(201,243,106,0.06)' },
+  challengeText: { color: Colors.dark.textMuted, flex: 1, fontSize: 13, lineHeight: 18 },
+  challengeTextOn: { color: Colors.dark.text },
   dateRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md },
   dateField: { flex: 1.5 },
   timeField: { flex: 1 },
