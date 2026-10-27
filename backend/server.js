@@ -349,23 +349,41 @@ app.get('/feed', auth, (req, res) => {
   const out = rows.filter(r => !blocked.has(r.user_id) && !blockedBy.has(r.user_id)).map(r => {
     const likes = db.prepare('SELECT COUNT(*) c FROM post_likes WHERE post_id = ?').get(r.id).c;
     const liked = !!db.prepare('SELECT 1 FROM post_likes WHERE post_id = ? AND user_id = ?').get(r.id, req.userId);
-    return { id: r.id, user_id: r.user_id, body: r.body, media_url: r.media_url, media_type: r.media_type, created_at: r.created_at, author: { id: r.user_id, display_name: r.display_name, avatar_url: r.avatar_url }, likes, liked };
+    return { id: r.id, user_id: r.user_id, body: r.body, media_url: r.media_url, media_type: r.media_type, source_gathering_id: r.source_gathering_id || null, created_at: r.created_at, author: { id: r.user_id, display_name: r.display_name, avatar_url: r.avatar_url }, likes, liked };
   });
   res.json(out);
 });
 
 app.post('/feed', auth, (req, res) => {
-  const { body, media_url, media_type } = req.body || {};
+  const { body, media_url, media_type, source_gathering_id, public_consent } = req.body || {};
   if (body != null && typeof body !== 'string') return res.status(400).json({ error: 'invalid post body' });
   const postBody = (body || '').trim();
   if (!postBody && !media_url) return res.status(400).json({ error: 'empty post' });
   if (postBody.length > 1000) return res.status(400).json({ error: 'post is too long' });
   if (media_url != null && (typeof media_url !== 'string' || media_url.length > 14000000 || !['image', 'video'].includes(media_type))) return res.status(400).json({ error: 'invalid or oversized media' });
-  const id = uid();
-  db.prepare('INSERT INTO posts (id,user_id,body,media_url,media_type) VALUES (?,?,?,?,?)').run(id, req.userId, postBody, media_url || null, media_type || null);
-  res.status(201).json({ id });
-});
 
+  // Sharing media associated with a private gathering requires an explicit, per-post public-sharing confirmation.
+  let sourceGatheringId = null;
+  let consentAt = null;
+  let consentVersion = null;
+  if (source_gathering_id != null) {
+    if (typeof source_gathering_id !== 'string' || !source_gathering_id.trim()) return res.status(400).json({ error: 'invalid source gathering' });
+    if (public_consent !== true) return res.status(400).json({ error: 'confirm that you have permission to share this media publicly' });
+    const gathering = db.prepare('SELECT id, host_id FROM gatherings WHERE id = ? AND cancelled_at IS NULL').get(source_gathering_id);
+    if (!gathering) return res.status(404).json({ error: 'gathering not found' });
+    if (!isApprovedMember(db, source_gathering_id, req.userId)) return res.status(403).json({ error: 'only the host or an approved attendee can share from this gathering' });
+    const blocked = db.prepare('SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)').get(req.userId, gathering.host_id, gathering.host_id, req.userId);
+    if (blocked) return res.status(403).json({ error: 'sharing is unavailable for this gathering' });
+    sourceGatheringId = source_gathering_id;
+    consentAt = new Date().toISOString();
+    consentVersion = 'public-media-share-v1';
+  }
+
+  const id = uid();
+  db.prepare('INSERT INTO posts (id,user_id,body,media_url,media_type,source_gathering_id,public_consent_at,public_consent_version) VALUES (?,?,?,?,?,?,?,?)')
+    .run(id, req.userId, postBody, media_url || null, media_type || null, sourceGatheringId, consentAt, consentVersion);
+  res.status(201).json({ id, source_gathering_id: sourceGatheringId, public_consent_recorded: !!consentAt });
+});
 app.delete('/feed/:id', auth, (req, res) => {
   const p = db.prepare('SELECT user_id FROM posts WHERE id = ?').get(req.params.id);
   if (!p) return res.status(404).json({ error: 'not found' });
