@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Colors } from '../constants/theme';
@@ -55,7 +55,7 @@ export default function HangoutMap({ gatherings, onSelect }: Props) {
   L.control.zoom({ position: 'bottomright' }).addTo(map);
   const icon = L.divIcon({ className: '', html: '<div class="hangout-pin"><span>✦</span></div>', iconSize: [34,34], iconAnchor: [17,28], popupAnchor: [0,-28] });
   const safe = (value) => String(value || '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-  const tellApp = (id) => window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ id }));
+  const tellApp = (id) => { const payload = JSON.stringify({ type:'hangout-select', id }); if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify({ id })); else window.parent.postMessage(payload, '*'); };
   pins.forEach((pin) => {
     if (!Number.isFinite(pin.lat) || !Number.isFinite(pin.lng)) return;
     const marker = pin.exact
@@ -79,7 +79,7 @@ export default function HangoutMap({ gatherings, onSelect }: Props) {
 </html>`.replace('__PINS__', pins);
   }, [gatherings]);
 
-  const handleMessage = (event: { nativeEvent: { data: string } }) => {
+  useEffect(() => {\n    if (Platform.OS !== 'web') return;\n    const receive = (event: MessageEvent) => {\n      try {\n        const message = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;\n        if (message?.type === 'hangout-select' && typeof message.id === 'string') onSelect(message.id);\n      } catch {}\n    };\n    window.addEventListener('message', receive);\n    return () => window.removeEventListener('message', receive);\n  }, [onSelect]);\n\n  const handleMessage = (event: { nativeEvent: { data: string } }) => {
     try {
       const message = JSON.parse(event.nativeEvent.data);
       if (typeof message.id === 'string') onSelect(message.id);
