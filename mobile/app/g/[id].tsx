@@ -4,17 +4,22 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors, Spacing, Radius, Typography } from '../../constants/theme';
 import { api } from '../../lib/api';
 import { Gathering, Message, JoinRequest } from '../../lib/types';
-import { Share } from 'react-native';
+import { Share, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../../lib/auth';
+import { parseMissionDescription } from '../../lib/irlMode';
 import ShareSheet from '../../components/ShareSheet';
 
 export default function GatheringDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const [g, setG] = useState<Gathering | null>(null);
+  const { user } = useAuth();
+  const [g, setG = useState<Gathering | null>(null);
   const [msgs, setMsgs] = useState<Message[]>([]);
   const [text, setText] = useState('');
   const [host, setHost] = useState<any>(null);
   const [shareVisible, setShareVisible] = useState(false);
+  const [recapStory, setRecapStory] = useState('');
   const pollRef = useRef<any>(null);
 
   const load = async () => {
@@ -42,11 +47,36 @@ export default function GatheringDetail() {
 
   if (!g) return <View style={styles.container}><Text style={{ color: Colors.dark.text }}>Loading...</Text></View>;
 
+  const mission = parseMissionDescription(g.description);
+  const eventEnded = new Date(g.end_time).getTime() <= Date.now();
+  const canCreateStory = user?.id === g.host_id || g.my_request_status === 'approved';
+  const shareStory = async () => {
+    const base = process.env.EXPO_PUBLIC_API_URL || (Platform.OS === 'android' ? 'http://10.0.2.2:4000' : 'http://localhost:4000');
+    const link = `${base}/share/g/${g.id}`;
+    const line = recapStory.trim() || `We made a plan around ${g.title}.`;
+    const challengeLine = mission.challenge ? `Our challenge: ${mission.challenge}` : '';
+    try {
+      await Share.share({
+        message: [line, challengeLine, `Find your next real-world plan on Hangout: ${link}`].filter(Boolean).join('\n\n'),
+        url: link,
+      });
+    } catch (e: any) {
+      Alert.alert('Couldn’t share your story', e?.message || 'Try again in a moment.');
+    }
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 120 }}>
       <Text style={[Typography.h1, { color: Colors.dark.text }]}>{g.title}</Text>
       <Text style={[Typography.caption, { color: Colors.dark.primary }]}>{g.category} · {g.visibility}</Text>
-      <Text style={[Typography.body, { color: Colors.dark.textMuted, marginTop: Spacing.sm }]}>{g.description}</Text>
+      {mission.mystery && <View style={styles.missionBadge}><Text style={styles.missionBadgeText}>✦  MYSTERY MISSION</Text></View>}
+      {mission.challenge ? (
+        <View style={styles.challengeCard}>
+          <Text style={styles.challengeKicker}>THE GROUP CHALLENGE</Text>
+          <Text style={styles.challengeBody}>{mission.challenge}</Text>
+        </View>
+      ) : null}
+      {!!mission.description && <Text style={[Typography.body, { color: Colors.dark.textMuted, marginTop: Spacing.sm }]}>{mission.description}</Text>}
       <Text style={[Typography.caption, { color: Colors.dark.textMuted, marginTop: Spacing.md }]}>
         {new Date(g.start_time).toLocaleString()} → {new Date(g.end_time).toLocaleString()}
       </Text>
@@ -95,6 +125,27 @@ export default function GatheringDetail() {
       <TouchableOpacity style={[styles.btn, { backgroundColor: Colors.dark.glass, borderWidth: 1, borderColor: Colors.dark.border, marginTop: Spacing.md }]} onPress={() => setShareVisible(true)}>
         <Text style={[styles.btnText, { color: Colors.dark.text }]}>Share</Text>
       </TouchableOpacity>
+      {eventEnded && canCreateStory && (
+        <View style={styles.recapCard}>
+          <View style={styles.recapEyebrow}><Text style={styles.recapSpark}>✦</Text><Text style={styles.recapEyebrowText}>THE AFTERGLOW</Text></View>
+          <Text style={styles.recapTitle}>Your night, in one story.</Text>
+          <Text style={styles.recapCopy}>Add a line in your own words. Your selected challenge and a link to find another plan will be included. Exact location stays private.</Text>
+          <TextInput
+            accessibilityLabel="Add a line to your hangout recap"
+            style={styles.recapInput}
+            placeholder="We joined a random hangout and…"
+            placeholderTextColor={Colors.dark.textDim}
+            value={recapStory}
+            onChangeText={setRecapStory}
+            maxLength={180}
+            multiline
+          />
+          <TouchableOpacity accessibilityRole="button" style={styles.recapButton} onPress={shareStory}>
+            <Ionicons name="share-social" size={17} color={Colors.dark.background} />
+            <Text style={styles.recapButtonText}>Share your story</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <TouchableOpacity style={[styles.btn, { backgroundColor: Colors.dark.glass, borderWidth: 1, borderColor: Colors.dark.border, marginTop: Spacing.md }]} onPress={async () => {
         try {
@@ -121,6 +172,20 @@ const styles = StyleSheet.create({
   sendBtn: { marginLeft: Spacing.sm, backgroundColor: Colors.dark.primary, paddingHorizontal: Spacing.md, justifyContent: 'center', borderRadius: Radius.md },
   msg: { backgroundColor: Colors.dark.glass, padding: Spacing.md, borderRadius: Radius.md, marginTop: Spacing.sm, borderWidth: 1, borderColor: Colors.dark.border },
   hostCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.dark.glass, padding: Spacing.md, borderRadius: Radius.md, marginTop: Spacing.md, borderWidth: 1, borderColor: Colors.dark.border },
+  missionBadge: { alignSelf: 'flex-start', backgroundColor: 'rgba(201,243,106,0.1)', borderWidth: 1, borderColor: 'rgba(201,243,106,0.2)', paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: Radius.full, marginTop: Spacing.md },
+  missionBadgeText: { color: Colors.dark.primary, fontSize: 10, fontWeight: '900', letterSpacing: 0.9 },
+  challengeCard: { backgroundColor: Colors.dark.surface2, padding: Spacing.lg, borderRadius: Radius.lg, borderWidth: 1, borderColor: 'rgba(201,243,106,0.2)', marginTop: Spacing.md },
+  challengeKicker: { color: Colors.dark.primary, fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
+  challengeBody: { color: Colors.dark.text, fontSize: 16, lineHeight: 23, fontWeight: '700', marginTop: Spacing.sm },
+  recapCard: { backgroundColor: Colors.dark.surface, padding: Spacing.lg, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.dark.borderStrong, marginTop: Spacing.xl },
+  recapEyebrow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+  recapSpark: { color: Colors.dark.primary, fontSize: 15 },
+  recapEyebrowText: { color: Colors.dark.primary, fontSize: 9, fontWeight: '900', letterSpacing: 1.4 },
+  recapTitle: { color: Colors.dark.text, fontSize: 22, lineHeight: 27, fontWeight: '900', letterSpacing: -0.4, marginTop: Spacing.sm },
+  recapCopy: { color: Colors.dark.textMuted, fontSize: 12, lineHeight: 18, marginTop: Spacing.xs },
+  recapInput: { minHeight: 72, textAlignVertical: 'top', color: Colors.dark.text, backgroundColor: Colors.dark.background, padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.dark.border, marginTop: Spacing.md },
+  recapButton: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm, backgroundColor: Colors.dark.primary, borderRadius: Radius.md, marginTop: Spacing.md },
+  recapButtonText: { color: Colors.dark.background, fontSize: 13, fontWeight: '900' },
   hostAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.dark.glass },
   statusBadge: { backgroundColor: Colors.dark.glass, padding: Spacing.sm, borderRadius: Radius.md, marginTop: Spacing.md, alignSelf: 'flex-start', borderWidth: 1, borderColor: Colors.dark.border },
   statusText: { color: Colors.dark.primary, fontWeight: '600' },
