@@ -148,7 +148,7 @@ export default function MapHome() {
       <View style={styles.filters}>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing.md, alignItems: 'center' }}>
-          <TouchableOpacity style={[styles.chip, !cat && styles.chipOn]} onPress={() => setCat(null)}>
+          <TouchableOpacity style={[styles.chip, !cat && styles.chipOn]} onPress={() => { setIrlSearch(null); setCat(null); }}>
             <Text style={[styles.chipText, !cat && styles.chipTextOn]}>All</Text>
           </TouchableOpacity>
           {CATS.map((c) => (
@@ -245,7 +245,7 @@ export default function MapHome() {
               {locating ? <ActivityIndicator color={Colors.dark.background} /> : <><Text style={styles.findButtonText}>Find a real plan</Text><Ionicons name="arrow-forward" size={19} color={Colors.dark.background} /></>}
             </TouchableOpacity>
             <TouchableOpacity accessibilityRole="button" style={styles.createMissionLink} onPress={() => { setIrlSheet(false); router.push('/host/new?mission=1'); }}><Text style={styles.createMissionText}>Rather host one? Add a mission challenge</Text></TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
     </SafeAreaView>
@@ -297,7 +297,8 @@ const styles = StyleSheet.create({
   fab: { position: 'absolute', bottom: 96, right: Spacing.lg, backgroundColor: Colors.dark.primary, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, borderRadius: Radius.full },
   fabText: { color: Colors.dark.background, fontWeight: '700', fontSize: 15 },
   sheetBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.64)' },
-  irlSheet: { maxHeight: '92%', backgroundColor: Colors.dark.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, borderWidth: 1, borderColor: Colors.dark.borderStrong },\n  irlSheetContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.xl },
+  irlSheet: { maxHeight: '92%', backgroundColor: Colors.dark.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, borderWidth: 1, borderColor: Colors.dark.borderStrong },
+  irlSheetContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.xl },
   sheetHandle: { width: 40, height: 4, borderRadius: Radius.full, backgroundColor: Colors.dark.textDim, alignSelf: 'center', marginBottom: Spacing.lg },
   sheetEyebrow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   sheetEyebrowText: { color: Colors.dark.primary, fontSize: 10, fontWeight: '900', letterSpacing: 1.25 },
