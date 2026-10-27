@@ -360,13 +360,15 @@ app.post('/feed', auth, (req, res) => {
   const postBody = (body || '').trim();
   if (!postBody && !media_url) return res.status(400).json({ error: 'empty post' });
   if (public_consent !== true) return res.status(400).json({ error: 'confirm that you have permission to share this content publicly' });
+  const consentAt = new Date().toISOString();
+  const consentVersion = 'public-media-share-v1';
   if (postBody.length > 1000) return res.status(400).json({ error: 'post is too long' });
   if (media_url != null && (typeof media_url !== 'string' || media_url.length > 14000000 || !['image', 'video'].includes(media_type))) return res.status(400).json({ error: 'invalid or oversized media' });
 
   // Sharing media associated with a private gathering requires an explicit, per-post public-sharing confirmation.
   let sourceGatheringId = null;
-  let consentAt = null;
-  let consentVersion = null;
+  let consentRecordedAt = consentAt;
+  let consentRecordedVersion = consentVersion;
   if (source_gathering_id != null) {
     if (typeof source_gathering_id !== 'string' || !source_gathering_id.trim()) return res.status(400).json({ error: 'invalid source gathering' });
     if (public_consent !== true) return res.status(400).json({ error: 'confirm that you have permission to share this media publicly' });
@@ -376,14 +378,13 @@ app.post('/feed', auth, (req, res) => {
     const blocked = db.prepare('SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)').get(req.userId, gathering.host_id, gathering.host_id, req.userId);
     if (blocked) return res.status(403).json({ error: 'sharing is unavailable for this gathering' });
     sourceGatheringId = source_gathering_id;
-    consentAt = new Date().toISOString();
-    consentVersion = 'public-media-share-v1';
+
   }
 
   const id = uid();
   db.prepare('INSERT INTO posts (id,user_id,body,media_url,media_type,source_gathering_id,public_consent_at,public_consent_version) VALUES (?,?,?,?,?,?,?,?)')
-    .run(id, req.userId, postBody, media_url || null, media_type || null, sourceGatheringId, consentAt, consentVersion);
-  res.status(201).json({ id, source_gathering_id: sourceGatheringId, public_consent_recorded: !!consentAt });
+    .run(id, req.userId, postBody, media_url || null, media_type || null, sourceGatheringId, consentRecordedAt, consentRecordedVersion);
+  res.status(201).json({ id, source_gathering_id: sourceGatheringId, public_consent_recorded: !!consentRecordedAt });
 });
 app.delete('/feed/:id', auth, (req, res) => {
   const p = db.prepare('SELECT user_id FROM posts WHERE id = ?').get(req.params.id);
