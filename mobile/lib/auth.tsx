@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
   const signUp = async (b: any) => {
     const r = await api.signup(b);
-    setToken(r.token);
+    await setToken(r.token);
     const u = await api.me();
     setUser(u);
     const redir = consumePendingRedirect();
