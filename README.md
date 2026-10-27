@@ -46,3 +46,23 @@ Configure `EXPO_PUBLIC_API_URL` in the EAS production environment with the deplo
 - Session tokens expire after 30 days and are signed with `TOKEN_SECRET`. Changing this secret logs out existing users.
 - Keep production on HTTPS and set restrictive CORS origins if browser clients are enabled.
 - Complete the platform privacy forms, moderation and incident response process, database backup verification, and end-to-end release checks before public launch.
+
+## Private Memories and photo sharing
+
+Memories are created for a gathering when its host or an approved attendee opens the album. Current membership is checked on every Memory metadata, upload, download, delete, and publish request. Pending, declined, and revoked attendees cannot read an album. Public recaps contain only the selected image IDs, with a per-publication consent version and timestamp. Public images are served through authenticated API routes; feed responses do not contain storage keys, Memory IDs, or gathering locations.
+
+Memory photo uploads require persistent S3-compatible object storage. No local or SQLite storage fallback is used. Set these backend environment variables before enabling uploads:
+
+- `S3_BUCKET` — private bucket name.
+- `S3_REGION` — bucket region.
+- `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY` — least-privilege bucket credentials.
+- `S3_ENDPOINT` — optional S3-compatible endpoint (for example, an R2 or MinIO endpoint); omit for AWS S3.
+- `FFMPEG_PATH` — required to publish videos; absolute path to a trusted FFmpeg executable installed with H.264/AAC support. Video sharing fails closed with a clear error if it is missing.
+
+Keep bucket public access blocked and allow the API service only the object read/write/delete permissions it needs. The app serves private files through membership-checked API routes and does not hand clients permanent object URLs. `S3_ENDPOINT` uses path-style addressing. Configure these variables on the API deployment (for Render, in the service environment), not in the mobile app. Uploads return a clear 503 until storage is configured.
+
+Uploads accept JPEG, PNG, WebP, MP4, and MOV up to 8 MB. The API inspects and re-encodes images before storage; stored JPEGs have EXIF/GPS and embedded metadata removed. Private videos remain in the private bucket and stream only to currently authorized attendees. **Public video sharing requires `FFMPEG_PATH`:** the API transcodes to MP4 while removing metadata and chapters, and refuses to publish if FFmpeg is absent or processing fails. This repo does not bundle FFmpeg; install and validate a trusted build on the API host before enabling public video sharing. The previous feed endpoint no longer accepts new base64 data-URL media. Existing legacy media URLs are omitted from feed responses; remove legacy base64 records using a reviewed backup-and-cleanup operation before launch if data minimization requires removing them from SQLite.
+
+Sharing consent currently records the versioned in-app confirmation, publisher, post, and selected media relationships. The confirmation explains that identifiable people need permission and that removal requests are available. This is not a substitute for legal/privacy review or a richer consent workflow. Reports and photo removal requests enter the existing moderation reports queue; moderators still need an operational response SLA and removal policy before public launch.
+
+The migration is additive and idempotent: startup creates `memories`, `memory_media`, `post_memory_media`, and `memory_share_consents` with foreign keys and indexes. It does not reset or rebuild the existing SQLite database. Back up production data before deployment and verify restoration as part of release operations.

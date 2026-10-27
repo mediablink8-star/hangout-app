@@ -165,6 +165,45 @@ function openDb() {
   try { db.exec('ALTER TABLE posts ADD COLUMN source_gathering_id TEXT REFERENCES gatherings(id)'); } catch (e) {}
   try { db.exec('ALTER TABLE posts ADD COLUMN public_consent_at TEXT'); } catch (e) {}
   try { db.exec('ALTER TABLE posts ADD COLUMN public_consent_version TEXT'); } catch (e) {}
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS memories (
+      id TEXT PRIMARY KEY,
+      gathering_id TEXT NOT NULL UNIQUE REFERENCES gatherings(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS memory_media (
+      id TEXT PRIMARY KEY,
+      memory_id TEXT NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+      uploader_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+      storage_key TEXT NOT NULL UNIQUE,
+      content_hash TEXT,
+      media_type TEXT NOT NULL CHECK(media_type IN ('image','video')),
+      content_type TEXT NOT NULL DEFAULT 'image/jpeg',
+      state TEXT NOT NULL CHECK(state IN ('pending','processing','ready','failed')),
+      caption TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS memory_media_memory_created ON memory_media(memory_id, created_at DESC);
+    CREATE TABLE IF NOT EXISTS post_memory_media (
+      post_id TEXT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+      media_id TEXT NOT NULL REFERENCES memory_media(id) ON DELETE CASCADE,
+      public_storage_key TEXT NOT NULL UNIQUE,
+      public_content_type TEXT NOT NULL DEFAULT 'image/jpeg',
+      PRIMARY KEY(post_id, media_id)
+    );
+    CREATE TABLE IF NOT EXISTS memory_share_consents (
+      post_id TEXT PRIMARY KEY REFERENCES posts(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES profiles(id),
+      consent_version TEXT NOT NULL,
+      submission_hash TEXT NOT NULL,
+      consented_at TEXT NOT NULL
+    );
+  `);
+  try { db.exec('ALTER TABLE memory_media ADD COLUMN content_hash TEXT'); } catch (e) {}
+  try { db.exec("ALTER TABLE memory_media ADD COLUMN content_type TEXT NOT NULL DEFAULT 'image/jpeg'"); } catch (e) {}
+  try { db.exec("ALTER TABLE post_memory_media ADD COLUMN public_content_type TEXT NOT NULL DEFAULT 'image/jpeg'"); } catch (e) {}
+  try { db.exec("ALTER TABLE memory_share_consents ADD COLUMN submission_hash TEXT NOT NULL DEFAULT ''"); } catch (e) {}
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS memory_media_upload_dedupe ON memory_media(memory_id,uploader_id,content_hash) WHERE content_hash IS NOT NULL');
   db.exec(`CREATE TABLE IF NOT EXISTS live_locations (
     user_id TEXT PRIMARY KEY REFERENCES profiles(id),
     lat REAL NOT NULL,

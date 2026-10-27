@@ -1,6 +1,10 @@
 const express = require('express');
 const cors = require('cors');
+const crypto = require('crypto');
+const { spawn } = require('child_process');
 const { openDb, uid, hashPw, verifyPw, tokenFor, verifyToken, fuzzCoord, isApprovedMember, publicGathering } = require('./db');
+const memoryStorage = require('./memoryStorage');
+const sharp = require('sharp');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -74,6 +78,217 @@ function auth(req, res, next) {
   req.profile = prof;
   next();
 }
+
+const PUBLIC_SHARE_CONSENT_VERSION = 'memory-public-share-v1';
+function memoryForGathering(gatheringId) {
+  let row = db.prepare('SELECT id FROM memories WHERE gathering_id = ?').get(gatheringId);
+  if (!row) {
+    const id = uid();
+    try { db.prepare('INSERT INTO memories (id,gathering_id) VALUES (?,?)').run(id, gatheringId); }
+    catch { row = db.prepare('SELECT id FROM memories WHERE gathering_id = ?').get(gatheringId); }
+    row ||= db.prepare('SELECT id FROM memories WHERE gathering_id = ?').get(gatheringId);
+  }
+  return row;
+}
+function canAccessMemory(memoryId, userId) {
+  const row = db.prepare('SELECT m.id,g.id gathering_id,g.host_id,g.cancelled_at FROM memories m JOIN gatherings g ON g.id=m.gathering_id WHERE m.id=?').get(memoryId);
+  if (!row || !isApprovedMember(db, row.gathering_id, userId)) return null;
+  const blocked = db.prepare('SELECT 1 FROM blocks WHERE (blocker_id=? AND blocked_id=?) OR (blocker_id=? AND blocked_id=?)').get(userId, row.host_id, row.host_id, userId);
+  return blocked ? null : row;
+}
+function memoryMediaItem(row) {
+  return { id: row.id, media_type: row.media_type, caption: row.caption, created_at: row.created_at,
+    uploader: { id: row.uploader_id, display_name: row.display_name, avatar_url: row.avatar_url },
+    content_url: `/memories/${row.memory_id}/media/${row.id}/content` };
+}
+function containsGatheringLocation(text, gatheringId, knownLocations) {
+  const normalized = String(text || '').toLocaleLowerCase();
+  if (!normalized) return false;
+  const locations = knownLocations || (gatheringId
+    ? db.prepare('SELECT address,lat_exact,lng_exact FROM gatherings WHERE id=?').all(gatheringId)
+    : db.prepare('SELECT address,lat_exact,lng_exact FROM gatherings').all());
+  return locations.some(location => {
+    const address = String(location.address || '').trim().toLocaleLowerCase();
+    return (address.length >= 5 && normalized.includes(address)) || normalized.includes(String(location.lat_exact)) || normalized.includes(String(location.lng_exact));
+  });
+}
+function sanitizeVideo(bytes) {
+  const ffmpeg = process.env.FFMPEG_PATH;
+  if (!ffmpeg) return Promise.reject(Object.assign(new Error('FFMPEG_PATH is not configured'), { code: 'FFMPEG_NOT_CONFIGURED' }));
+  return new Promise((resolve, reject) => {
+    const proc = spawn(ffmpeg, ['-hide_banner','-loglevel','error','-i','pipe:0','-map_metadata','-1','-map_chapters','-1','-c:v','libx264','-preset','veryfast','-crf','28','-c:a','aac','-movflags','frag_keyframe+empty_moov','-f','mp4','pipe:1'], { stdio: ['pipe','pipe','pipe'], windowsHide: true });
+    const chunks = []; let total = 0, stderr = ''; let settled = false;
+    const timer = setTimeout(() => proc.kill('SIGKILL'), 30_000);
+    proc.stdout.on('data', chunk => { total += chunk.length; if (total > 40 * 1024 * 1024) proc.kill('SIGKILL'); else chunks.push(chunk); });
+    proc.stderr.on('data', chunk => { if (stderr.length < 4000) stderr += chunk.toString(); });
+    proc.on('error', error => { if (!settled) { settled = true; clearTimeout(timer); reject(error); } });
+    proc.on('close', code => { if (settled) return; settled = true; clearTimeout(timer); if (code === 0 && total > 0 && total <= 40 * 1024 * 1024) resolve(Buffer.concat(chunks)); else reject(Object.assign(new Error('video processing failed: ' + stderr.slice(0, 300)), { code: 'VIDEO_PROCESSING_FAILED' })); });
+    proc.stdin.on('error', () => {}); proc.stdin.end(bytes);
+  });
+}
+
+// Memories are private; every metadata and byte-stream request rechecks current membership.
+app.post('/gatherings/:id/memory', auth, async (req, res) => {
+  const g = db.prepare('SELECT id,cancelled_at FROM gatherings WHERE id=?').get(req.params.id);
+  if (!g) return res.status(404).json({ error: 'gathering not found' });
+  if (!isApprovedMember(db, g.id, req.userId)) return res.status(403).json({ error: 'approved attendees only' });
+  if (g.cancelled_at) return res.status(410).json({ error: 'this gathering is no longer active' });
+  try { return res.status(200).json({ id: memoryForGathering(g.id).id, gathering_id: g.id }); }
+  catch { return res.status(503).json({ error: 'memory storage is not configured' }); }
+});
+app.get('/memories', auth, (req, res) => {
+  const rows = db.prepare(`SELECT m.id,m.gathering_id,m.created_at,g.title,g.start_time,g.cancelled_at,
+    (SELECT COUNT(*) FROM memory_media mm WHERE mm.memory_id=m.id AND mm.state='ready') media_count
+    FROM memories m JOIN gatherings g ON g.id=m.gathering_id
+    WHERE (g.host_id=? OR EXISTS (SELECT 1 FROM join_requests jr WHERE jr.gathering_id=g.id AND jr.user_id=? AND jr.status='approved'))
+    AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id=? AND b.blocked_id=g.host_id) OR (b.blocker_id=g.host_id AND b.blocked_id=?))
+    ORDER BY g.start_time DESC LIMIT 100`).all(req.userId, req.userId, req.userId, req.userId);
+  res.json(rows);
+});
+app.get('/memories/:id', auth, (req, res) => {
+  const memory = canAccessMemory(req.params.id, req.userId);
+  if (!memory) return res.status(404).json({ error: 'memory not found' });
+  const gathering = db.prepare('SELECT title,start_time,end_time,cancelled_at FROM gatherings WHERE id=?').get(memory.gathering_id);
+  let rows;
+  if (typeof req.query.cursor === 'string' && req.query.cursor.includes('|')) {
+    const split = req.query.cursor.lastIndexOf('|'), createdAt = req.query.cursor.slice(0, split), mediaId = req.query.cursor.slice(split + 1);
+    rows = db.prepare(`SELECT mm.*,p.display_name,p.avatar_url FROM memory_media mm JOIN profiles p ON p.id=mm.uploader_id
+      WHERE mm.memory_id=? AND mm.state='ready' AND (mm.created_at < ? OR (mm.created_at=? AND mm.id < ?))
+      ORDER BY mm.created_at DESC,mm.id DESC LIMIT 61`).all(memory.id, createdAt, createdAt, mediaId);
+  } else {
+    rows = db.prepare(`SELECT mm.*,p.display_name,p.avatar_url FROM memory_media mm JOIN profiles p ON p.id=mm.uploader_id
+      WHERE mm.memory_id=? AND mm.state='ready' ORDER BY mm.created_at DESC,mm.id DESC LIMIT 61`).all(memory.id);
+  }
+  const hasMore = rows.length > 60; if (hasMore) rows = rows.slice(0, 60);
+  const media = rows.map(r => memoryMediaItem({ ...r, memory_id: memory.id }));
+  const last = rows[rows.length - 1];
+  res.json({ id: memory.id, is_host: memory.host_id === req.userId, gathering: { title: gathering.title, start_time: gathering.start_time, end_time: gathering.end_time, cancelled: !!gathering.cancelled_at }, media, next_cursor: hasMore && last ? `${last.created_at}|${last.id}` : null });
+});
+app.post('/memories/:id/uploads', auth, async (req, res) => {
+  const memory = canAccessMemory(req.params.id, req.userId);
+  if (!memory) return res.status(404).json({ error: 'memory not found' });
+  if (memory.cancelled_at) return res.status(410).json({ error: 'uploads are closed for this gathering' });
+  const { data, caption = '' } = req.body || {};
+  const dataMatch = typeof data === 'string' && data.match(/^data:(image\/(?:jpeg|png|webp)|video\/(?:mp4|quicktime|x-m4v));base64,/);
+  if (!dataMatch || data.length > 11_200_000 || typeof caption !== 'string' || caption.length > 240) return res.status(400).json({ error: 'choose a supported image or video up to 8 MB' });
+  const bytes = Buffer.from(data.slice(data.indexOf(',') + 1), 'base64');
+  if (!bytes.length || bytes.length > 8 * 1024 * 1024) return res.status(400).json({ error: 'media must be 8 MB or smaller' });
+  let uploadId = null;
+  try {
+    const isImage = dataMatch[1].startsWith('image/');
+    let clean = bytes, mediaType = 'video', contentType = dataMatch[1];
+    if (isImage) {
+      const meta = await sharp(bytes, { limitInputPixels: 40_000_000 }).metadata();
+      if (!['jpeg','png','webp'].includes(meta.format)) return res.status(415).json({ error: 'unsupported image format' });
+      // Re-encoding removes EXIF/GPS, embedded profiles, and filename metadata before private storage.
+      clean = await sharp(bytes, { limitInputPixels: 40_000_000 }).rotate().jpeg({ quality: 88, mozjpeg: true }).toBuffer();
+      mediaType = 'image'; contentType = 'image/jpeg';
+    } else if (bytes.length < 12 || bytes.toString('ascii', 4, 8) !== 'ftyp') {
+      return res.status(415).json({ error: 'invalid video file' });
+    }
+    const hash = crypto.createHash('sha256').update(bytes).digest('hex');
+    let prior = db.prepare('SELECT id,storage_key,state FROM memory_media WHERE memory_id=? AND uploader_id=? AND content_hash=?').get(memory.id, req.userId, hash);
+    if (prior?.state === 'ready') return res.status(200).json({ id: prior.id, state: 'ready', already_uploaded: true });
+    const count = db.prepare("SELECT COUNT(*) count FROM memory_media WHERE memory_id=? AND state IN ('pending','processing','ready')").get(memory.id).count;
+    if (!prior && count >= 100) return res.status(400).json({ error: 'this Memory has reached its 100-media limit' });
+    const id = prior?.id || uid(), key = prior?.storage_key || `private/memories/${memory.id}/${uid()}`;
+    uploadId = id;
+    if (!prior) db.prepare("INSERT INTO memory_media (id,memory_id,uploader_id,storage_key,content_hash,media_type,content_type,state,caption) VALUES (?,?,?,?,?,?,?,'pending',?)")
+      .run(id, memory.id, req.userId, key, hash, mediaType, contentType, caption.trim());
+    await memoryStorage.put(key, clean, contentType);
+    db.prepare("UPDATE memory_media SET state='ready',caption=?,content_type=? WHERE id=? AND uploader_id=?").run(caption.trim(), contentType, id, req.userId);
+    return res.status(201).json({ id, state: 'ready' });
+  } catch (error) {
+    // Failed rows retain the dedupe key so an identical retry resumes the same media record.
+    if (uploadId) db.prepare("UPDATE memory_media SET state='failed' WHERE id=? AND uploader_id=? AND state!='ready'").run(uploadId, req.userId);
+    if (String(error.message).includes('not configured')) return res.status(503).json({ error: 'private photo storage is not configured' });
+    if (error.code === 'FFMPEG_NOT_CONFIGURED') return res.status(503).json({ error: 'video processing is not configured on this server' });
+    if (error.name === 'InputError' || error.message.includes('unsupported image format')) return res.status(415).json({ error: 'invalid media file' });
+    return res.status(502).json({ error: 'media upload failed; please retry' });
+  }
+});
+app.get('/memories/:id/media/:mediaId/content', auth, async (req, res) => {
+  const memory = canAccessMemory(req.params.id, req.userId);
+  if (!memory) return res.status(404).json({ error: 'media not found' });
+  const row = db.prepare("SELECT storage_key,content_type FROM memory_media WHERE id=? AND memory_id=? AND state='ready'").get(req.params.mediaId, memory.id);
+  if (!row) return res.status(404).json({ error: 'media not found' });
+  try {
+    const object = await memoryStorage.get(row.storage_key);
+    res.setHeader('Content-Type', row.content_type || 'image/jpeg'); res.setHeader('Content-Disposition', 'inline');
+    res.setHeader('Cache-Control', 'private, no-store'); object.Body.pipe(res);
+  } catch { return res.status(502).json({ error: 'media unavailable' }); }
+});
+app.delete('/memories/:id/media/:mediaId', auth, async (req, res) => {
+  const memory = canAccessMemory(req.params.id, req.userId);
+  if (!memory) return res.status(404).json({ error: 'media not found' });
+  const row = db.prepare('SELECT id,uploader_id,storage_key FROM memory_media WHERE id=? AND memory_id=?').get(req.params.mediaId, memory.id);
+  if (!row) return res.status(404).json({ error: 'media not found' });
+  if (row.uploader_id !== req.userId && memory.host_id !== req.userId) return res.status(403).json({ error: 'only the uploader or host can remove this photo' });
+  const publicCopies = db.prepare('SELECT public_storage_key FROM post_memory_media WHERE media_id=?').all(row.id);
+  try { await memoryStorage.remove(row.storage_key); for (const copy of publicCopies) await memoryStorage.remove(copy.public_storage_key); }
+  catch { return res.status(502).json({ error: 'media could not be removed safely; retry later' }); }
+  db.prepare('DELETE FROM memory_media WHERE id=?').run(row.id);
+  res.json({ ok: true });
+});
+app.post('/memories/:id/publish', auth, async (req, res) => {
+  const memory = canAccessMemory(req.params.id, req.userId);
+  if (!memory) return res.status(404).json({ error: 'memory not found' });
+  const { media_ids, caption = '', public_consent, consent_version } = req.body || {};
+  if (public_consent !== true) return res.status(400).json({ error: 'explicit public-sharing consent is required' });
+  if (consent_version !== PUBLIC_SHARE_CONSENT_VERSION) return res.status(400).json({ error: 'sharing consent has changed; review it and try again' });
+  if (!Array.isArray(media_ids) || media_ids.length < 1 || media_ids.length > 10 || media_ids.some(x => typeof x !== 'string') || new Set(media_ids).size !== media_ids.length) return res.status(400).json({ error: 'select 1–10 unique photos or videos' });
+  if (typeof caption !== 'string' || caption.length > 1000) return res.status(400).json({ error: 'caption must be 1000 characters or fewer' });
+  if (containsGatheringLocation(caption, memory.gathering_id)) return res.status(400).json({ error: 'remove the private gathering address or coordinates from this public caption' });
+  const rows = db.prepare(`SELECT id,uploader_id,storage_key,media_type,content_type FROM memory_media WHERE memory_id=? AND state='ready' AND id IN (${media_ids.map(() => '?').join(',')})`).all(memory.id, ...media_ids);
+  if (rows.length !== media_ids.length) return res.status(400).json({ error: 'one or more selected items are unavailable' });
+  const relatedUsers = [...new Set([memory.host_id, ...rows.map(row => row.uploader_id)])];
+  const block = db.prepare(`SELECT 1 FROM blocks WHERE (blocker_id=? AND blocked_id IN (${relatedUsers.map(() => '?').join(',')}))
+    OR (blocked_id=? AND blocker_id IN (${relatedUsers.map(() => '?').join(',')})) LIMIT 1`).get(req.userId, ...relatedUsers, req.userId, ...relatedUsers);
+  if (block) return res.status(403).json({ error: 'publishing is unavailable for this gathering' });
+  const requestKey = req.get('Idempotency-Key');
+  if (!requestKey) return res.status(400).json({ error: 'a submission key is required so retries cannot create duplicate posts' });
+  if (!/^[\w-]{8,100}$/.test(requestKey)) return res.status(400).json({ error: 'invalid submission key' });
+  // Use the client-generated key as the post id so a retry cannot create a duplicate.
+  const postId = requestKey;
+  const submissionHash = crypto.createHash('sha256').update(JSON.stringify({ memory_id: memory.id, user_id: req.userId, media_ids: [...media_ids].sort(), caption: caption.trim(), consent_version })).digest('hex');
+  const existing = db.prepare('SELECT id,user_id FROM posts WHERE id=?').get(postId);
+  if (existing) {
+    const previous = db.prepare('SELECT submission_hash FROM memory_share_consents WHERE post_id=?').get(postId);
+    return existing.user_id === req.userId && previous?.submission_hash === submissionHash
+      ? res.status(200).json({ id: postId, already_published: true })
+      : res.status(409).json({ error: 'submission key already used for a different publication' });
+  }
+  const publicKeys = [];
+  try {
+    for (const row of rows) {
+      const object = await memoryStorage.get(row.storage_key);
+      const chunks = []; for await (const chunk of object.Body) chunks.push(chunk);
+      const original = Buffer.concat(chunks);
+      const safe = row.media_type === 'video' ? await sanitizeVideo(original) : await sharp(original, { limitInputPixels: 40_000_000 }).rotate().jpeg({ quality: 88, mozjpeg: true }).toBuffer();
+      const safeType = row.media_type === 'video' ? 'video/mp4' : 'image/jpeg';
+      const key = `public/memory-share/${postId}/${row.id}.${row.media_type === 'video' ? 'mp4' : 'jpg'}`;
+      await memoryStorage.put(key, safe, safeType); publicKeys.push({ mediaId: row.id, key, contentType: safeType });
+    }
+  } catch (error) {
+    for (const item of publicKeys) memoryStorage.remove(item.key).catch(() => {});
+    return res.status(error.code === 'FFMPEG_NOT_CONFIGURED' ? 503 : 502).json({ error: error.code === 'FFMPEG_NOT_CONFIGURED' ? 'Video sharing requires the server video processor; no items were published.' : 'could not prepare selected items; nothing was published' });
+  }
+  try {
+    db.exec('BEGIN IMMEDIATE');
+    if (!canAccessMemory(memory.id, req.userId)) throw new Error('membership revoked');
+    db.prepare('INSERT INTO posts (id,user_id,body,media_url,media_type,source_gathering_id,public_consent_at,public_consent_version) VALUES (?,?,?,?,?,?,?,?)')
+      .run(postId, req.userId, caption.trim(), null, null, memory.gathering_id, new Date().toISOString(), consent_version);
+    const link = db.prepare('INSERT INTO post_memory_media (post_id,media_id,public_storage_key,public_content_type) VALUES (?,?,?,?)');
+    for (const item of publicKeys) link.run(postId, item.mediaId, item.key, item.contentType);
+    db.prepare('INSERT INTO memory_share_consents (post_id,user_id,consent_version,submission_hash,consented_at) VALUES (?,?,?,?,?)').run(postId, req.userId, consent_version, submissionHash, new Date().toISOString());
+    db.exec('COMMIT');
+  } catch (error) {
+    try { db.exec('ROLLBACK'); } catch {}
+    for (const item of publicKeys) memoryStorage.remove(item.key).catch(() => {});
+    return res.status(500).json({ error: 'publication could not be saved' });
+  }
+  res.status(201).json({ id: postId });
+});
 
 // ---- auth ----
 app.post('/auth/signup', limitAuth, (req, res) => {
@@ -346,50 +561,62 @@ app.get('/feed', auth, (req, res) => {
   if (user_id) { sql += ' WHERE p.user_id = ?'; params.push(user_id); }
   sql += ' ORDER BY p.created_at DESC LIMIT 100';
   const rows = db.prepare(sql).all(...params);
+  const knownLocations = db.prepare('SELECT address,lat_exact,lng_exact FROM gatherings').all();
   const out = rows.filter(r => !blocked.has(r.user_id) && !blockedBy.has(r.user_id)).map(r => {
     const likes = db.prepare('SELECT COUNT(*) c FROM post_likes WHERE post_id = ?').get(r.id).c;
     const liked = !!db.prepare('SELECT 1 FROM post_likes WHERE post_id = ? AND user_id = ?').get(r.id, req.userId);
-    return { id: r.id, user_id: r.user_id, body: r.body, media_url: r.media_url, media_type: r.media_type, source_gathering_id: r.source_gathering_id || null, created_at: r.created_at, author: { id: r.user_id, display_name: r.display_name, avatar_url: r.avatar_url }, likes, liked };
+    const media_items = db.prepare('SELECT media_id,public_content_type FROM post_memory_media WHERE post_id=? ORDER BY rowid').all(r.id).map(x => ({ id: x.media_id, media_type: x.public_content_type.startsWith('video/') ? 'video' : 'image', content_url: `/feed/${r.id}/media/${x.media_id}/content` }));
+    return { id: r.id, user_id: r.user_id, body: containsGatheringLocation(r.body, undefined, knownLocations) ? '' : r.body, media_url: null, media_type: null, media_items, created_at: r.created_at, author: { id: r.user_id, display_name: r.display_name, avatar_url: r.avatar_url }, likes, liked };
   });
   res.json(out);
 });
 
+app.get('/feed/:postId/media/:mediaId/content', auth, async (req, res) => {
+  const post = db.prepare('SELECT user_id FROM posts WHERE id=?').get(req.params.postId);
+  if (!post) return res.status(404).json({ error: 'media not found' });
+  const blocked = db.prepare('SELECT 1 FROM blocks WHERE (blocker_id=? AND blocked_id=?) OR (blocker_id=? AND blocked_id=?)').get(req.userId, post.user_id, post.user_id, req.userId);
+  const link = db.prepare('SELECT public_storage_key,public_content_type FROM post_memory_media WHERE post_id=? AND media_id=?').get(req.params.postId, req.params.mediaId);
+  if (!link || blocked) return res.status(404).json({ error: 'media not found' });
+  try {
+    const object = await memoryStorage.get(link.public_storage_key);
+    res.setHeader('Content-Type', link.public_content_type || 'image/jpeg'); res.setHeader('Content-Disposition', 'inline'); res.setHeader('Cache-Control', 'private, no-store'); object.Body.pipe(res);
+  } catch { return res.status(502).json({ error: 'media unavailable' }); }
+});
+
+app.post('/feed/:postId/report', auth, (req, res) => {
+  const { reason, media_id } = req.body || {};
+  if (typeof reason !== 'string' || !reason.trim() || reason.length > 500) return res.status(400).json({ error: 'please describe the issue' });
+  const post = db.prepare('SELECT id FROM posts WHERE id=?').get(req.params.postId);
+  if (!post) return res.status(404).json({ error: 'post not found' });
+  if (media_id != null && !db.prepare('SELECT 1 FROM post_memory_media WHERE post_id=? AND media_id=?').get(post.id, media_id)) return res.status(404).json({ error: 'post media not found' });
+  const targetId = media_id ? `${post.id}:${media_id}` : post.id;
+  const fullReason = media_id ? `Media removal request (${media_id}): ${reason.trim()}` : reason.trim();
+  db.prepare('INSERT INTO reports (id,reporter_id,target_type,target_id,reason) VALUES (?,?,?,?,?)').run(uid(), req.userId, media_id ? 'post_media' : 'post', targetId, fullReason);
+  res.status(201).json({ ok: true });
+});
+
 app.post('/feed', auth, (req, res) => {
-  const { body, media_url, media_type, source_gathering_id, public_consent } = req.body || {};
+  const { body, public_consent } = req.body || {};
+  if (req.body?.media_url != null || req.body?.source_gathering_id != null) return res.status(400).json({ error: 'Add photos to a private Memory, then select the items to publish from that album.' });
   if (body != null && typeof body !== 'string') return res.status(400).json({ error: 'invalid post body' });
   const postBody = (body || '').trim();
-  if (!postBody && !media_url) return res.status(400).json({ error: 'empty post' });
+  if (!postBody) return res.status(400).json({ error: 'empty post' });
+  if (containsGatheringLocation(postBody)) return res.status(400).json({ error: 'remove private gathering addresses or coordinates from public posts' });
   if (public_consent !== true) return res.status(400).json({ error: 'confirm that you have permission to share this content publicly' });
   const consentAt = new Date().toISOString();
   const consentVersion = 'public-media-share-v1';
   if (postBody.length > 1000) return res.status(400).json({ error: 'post is too long' });
-  if (media_url != null && (typeof media_url !== 'string' || media_url.length > 14000000 || !['image', 'video'].includes(media_type))) return res.status(400).json({ error: 'invalid or oversized media' });
-
-  // Sharing media associated with a private gathering requires an explicit, per-post public-sharing confirmation.
-  let sourceGatheringId = null;
-  let consentRecordedAt = consentAt;
-  let consentRecordedVersion = consentVersion;
-  if (source_gathering_id != null) {
-    if (typeof source_gathering_id !== 'string' || !source_gathering_id.trim()) return res.status(400).json({ error: 'invalid source gathering' });
-    if (public_consent !== true) return res.status(400).json({ error: 'confirm that you have permission to share this media publicly' });
-    const gathering = db.prepare('SELECT id, host_id FROM gatherings WHERE id = ? AND cancelled_at IS NULL').get(source_gathering_id);
-    if (!gathering) return res.status(404).json({ error: 'gathering not found' });
-    if (!isApprovedMember(db, source_gathering_id, req.userId)) return res.status(403).json({ error: 'only the host or an approved attendee can share from this gathering' });
-    const blocked = db.prepare('SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)').get(req.userId, gathering.host_id, gathering.host_id, req.userId);
-    if (blocked) return res.status(403).json({ error: 'sharing is unavailable for this gathering' });
-    sourceGatheringId = source_gathering_id;
-
-  }
-
   const id = uid();
-  db.prepare('INSERT INTO posts (id,user_id,body,media_url,media_type,source_gathering_id,public_consent_at,public_consent_version) VALUES (?,?,?,?,?,?,?,?)')
-    .run(id, req.userId, postBody, media_url || null, media_type || null, sourceGatheringId, consentRecordedAt, consentRecordedVersion);
-  res.status(201).json({ id, source_gathering_id: sourceGatheringId, public_consent_recorded: !!consentRecordedAt });
+  db.prepare('INSERT INTO posts (id,user_id,body,media_url,media_type,public_consent_at,public_consent_version) VALUES (?,?,?,?,?,?,?)')
+    .run(id, req.userId, postBody, null, null, consentAt, consentVersion);
+  res.status(201).json({ id, public_consent_recorded: true });
 });
 app.delete('/feed/:id', auth, (req, res) => {
   const p = db.prepare('SELECT user_id FROM posts WHERE id = ?').get(req.params.id);
   if (!p) return res.status(404).json({ error: 'not found' });
   if (p.user_id !== req.userId) return res.status(403).json({ error: 'forbidden' });
+  const publicObjects = db.prepare('SELECT public_storage_key FROM post_memory_media WHERE post_id=?').all(req.params.id);
+  for (const item of publicObjects) memoryStorage.remove(item.public_storage_key).catch(() => {});
   db.prepare('DELETE FROM post_likes WHERE post_id = ?').run(req.params.id);
   db.prepare('DELETE FROM posts WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
