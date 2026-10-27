@@ -79,7 +79,19 @@ export default function HangoutMap({ gatherings, onSelect }: Props) {
 </html>`.replace('__PINS__', pins);
   }, [gatherings]);
 
-  useEffect(() => {\n    if (Platform.OS !== 'web') return;\n    const receive = (event: MessageEvent) => {\n      try {\n        const message = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;\n        if (message?.type === 'hangout-select' && typeof message.id === 'string') onSelect(message.id);\n      } catch {}\n    };\n    window.addEventListener('message', receive);\n    return () => window.removeEventListener('message', receive);\n  }, [onSelect]);\n\n  const handleMessage = (event: { nativeEvent: { data: string } }) => {
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const receive = (event: MessageEvent) => {
+      try {
+        const message = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (message?.type === 'hangout-select' && typeof message.id === 'string') onSelect(message.id);
+      } catch {}
+    };
+    window.addEventListener('message', receive);
+    return () => window.removeEventListener('message', receive);
+  }, [onSelect]);
+
+  const handleMessage = (event: { nativeEvent: { data: string } }) => {
     try {
       const message = JSON.parse(event.nativeEvent.data);
       if (typeof message.id === 'string') onSelect(message.id);
