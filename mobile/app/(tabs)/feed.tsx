@@ -68,7 +68,7 @@ export default function Feed() {
     if (!body.trim() && !media) return;
     setPosting(true);
     try {
-      await api.createPost({ body: body.trim(), media_url: media?.url || null, media_type: media?.type || null });
+      await api.createPost({ body: body.trim(), media_url: media?.url || null, media_type: media?.type || null, public_consent: publicShareConfirmed });
       setBody(''); setMedia(null); setPublicShareConfirmed(false);
       await load();
     } catch (e: any) { Alert.alert('Error', e.message); }
