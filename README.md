@@ -28,7 +28,7 @@ npx tsc --noEmit
 npx expo start
 ```
 
-Set `EXPO_PUBLIC_API_URL` to the API URL. The default `http://10.0.2.2:4000` is only for an Android emulator. Production builds need the deployed HTTPS API URL configured in the EAS environment.
+Set `EXPO_PUBLIC_API_URL` to the API URL when using a physical device. The default is `http://10.0.2.2:4000` on the Android emulator and `http://localhost:4000` in the iOS simulator or web. Production builds require the deployed HTTPS API URL in the EAS environment. Native sessions are saved with Expo SecureStore; web sessions stay in memory.
 
 ## Deploy the API to Render
 
