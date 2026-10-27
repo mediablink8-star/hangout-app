@@ -5,6 +5,7 @@ import { Colors, Spacing, Radius, Typography } from '../../constants/theme';
 import { api } from '../../lib/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -18,6 +19,7 @@ export default function ChatScreen() {
   const [error, setError] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
+  const [spinningChaos, setSpinningChaos] = useState(false);
   const flatRef = useRef<FlatList>(null);
 
   const loadConv = async () => {
@@ -73,6 +75,37 @@ export default function ChatScreen() {
     }
   };
 
+  const spinChaos = async () => {
+    if (spinningChaos || conv?.read_only || !conv?.gathering) return;
+    const games = [
+      ['Hot Take', 'What completely ordinary thing is secretly overrated?'],
+      ['Majority Rules', 'Pick one: sunrise plans, late-night plans, or no plans. What will most of the group choose?'],
+      ['Pick Our Next Move', 'Vote for coffee, a walk, food, or a game. The group can use the result for its next move.'],
+      ['Secret Mission', 'Share one tiny, silly challenge the group can do together. Everyone can pass.'],
+      ['Who Is Most Likely To…?', 'Who is most likely to make the group laugh? Skip or nominate yourself.'],
+    ];
+    const [name, prompt] = games[Math.floor(Math.random() * games.length)];
+    const body = `🎲 CHAOS WHEEL · ${name}\n\n${prompt}`;
+    setSpinningChaos(true);
+    try {
+      const response = await api.sendConversationMessage(id!, body);
+      setMsgs((prev) => [...prev, {
+        id: response.id,
+        conversation_id: id,
+        sender_id: 'me',
+        body,
+        is_system: false,
+        created_at: response.created_at || new Date().toISOString(),
+        sender: { id: 'me', display_name: 'You', avatar_url: '' },
+      }]);
+      api.markConversationRead(id!).catch(() => {});
+    } catch (e: any) {
+      setError(e?.message || 'The wheel could not spin. Try again.');
+    } finally {
+      setSpinningChaos(false);
+    }
+  };
+
   const loadOlder = async () => {
     if (loadingOlder || !hasMore || msgs.length === 0) return;
     setLoadingOlder(true);
@@ -86,22 +119,28 @@ export default function ChatScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={0}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}><Text style={{ color: Colors.dark.primary, fontSize: 16 }}>‹ Back</Text></TouchableOpacity>
-          <TouchableOpacity style={{ flex: 1, marginLeft: Spacing.sm }} onPress={() => conv?.gathering && router.push(`/g/${conv.gathering.id}`)}>
-            <Text style={[Typography.h3, { color: Colors.dark.text }]} numberOfLines={1}>{conv?.gathering?.title || conv?.title || 'Chat'}</Text>
-            <Text style={[Typography.caption, { color: Colors.dark.textMuted }]}>
-              {conv?.gathering ? `${conv.gathering.category} · ${conv.member_count} members` : `${conv?.member_count || 0} members`}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => conv?.gathering ? router.push(`/g/${conv.gathering.id}`) : null}>
-            <Text style={{ color: Colors.dark.primary, fontSize: 13 }}>Details</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowMembers(true)}>
-            <Text style={{ color: Colors.dark.primary, fontSize: 13 }}>Members</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={async () => { try { await api.muteConversation(id!, !muted); setMuted(!muted); } catch {} }}>
-            <Text style={{ color: Colors.dark.primary, fontSize: 13 }}>{muted ? 'Unmute' : 'Mute'}</Text>
-          </TouchableOpacity>
+          <View style={styles.headerTop}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" style={styles.backButton} onPress={() => router.back()}>
+              <Ionicons name="chevron-back" size={20} color={Colors.dark.text} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.chatTitleBlock} onPress={() => conv?.gathering && router.push(`/g/${conv.gathering.id}`)}>
+              <Text style={[Typography.h3, { color: Colors.dark.text }]} numberOfLines={1}>{conv?.gathering?.title || conv?.title || 'Chat'}</Text>
+              <Text style={[Typography.caption, { color: Colors.dark.textMuted }]} numberOfLines={1}>
+                {conv?.gathering ? `${conv.gathering.category} · ${conv.member_count} members` : `${conv?.member_count || 0} members`}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.headerActions}>
+            {conv?.gathering && !conv?.read_only && (
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Spin the Chaos Wheel" style={[styles.chaosButton, spinningChaos && { opacity: 0.65 }]} onPress={spinChaos} disabled={spinningChaos}>
+                {spinningChaos ? <ActivityIndicator color={Colors.dark.background} size="small" /> : <Ionicons name="sparkles" size={16} color={Colors.dark.background} />}
+                <Text style={styles.chaosButtonText}>{spinningChaos ? 'SPINNING…' : 'SPIN THE CHAOS WHEEL'}</Text>
+              </TouchableOpacity>
+            )}
+            {conv?.gathering && <TouchableOpacity style={styles.headerAction} onPress={() => router.push(`/g/${conv.gathering.id}`)}><Text style={styles.headerActionText}>Details</Text></TouchableOpacity>}
+            <TouchableOpacity style={styles.headerAction} onPress={() => setShowMembers(true)}><Text style={styles.headerActionText}>Members</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.headerAction} onPress={async () => { try { await api.muteConversation(id!, !muted); setMuted(!muted); } catch {} }}><Text style={styles.headerActionText}>{muted ? 'Unmute' : 'Mute'}</Text></TouchableOpacity>
+          </ScrollView>
         </View>
 
         {conv?.read_only && (
@@ -120,7 +159,7 @@ export default function ChatScreen() {
           ListHeaderComponent={loadingOlder ? <ActivityIndicator color={Colors.dark.primary} /> : undefined}
           renderItem={({ item }) => {
             const mine = item.sender_id === 'me' || item.sender?.display_name === 'You';
-            if (item.is_system) {
+            if (item.is_system || String(item.body || '').startsWith('🎲 CHAOS WHEEL')) {
               return (
                 <View style={styles.systemMsg}>
                   <Text style={styles.systemText}>{item.body}</Text>
@@ -188,7 +227,15 @@ export default function ChatScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.dark.border },
+  header: { paddingHorizontal: Spacing.md, paddingTop: Spacing.xs, paddingBottom: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.dark.border, backgroundColor: Colors.dark.background },
+  headerTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, minHeight: 48 },
+  backButton: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: Radius.md, backgroundColor: Colors.dark.surface2 },
+  chatTitleBlock: { flex: 1, minWidth: 0 },
+  headerActions: { alignItems: 'center', gap: Spacing.sm, paddingTop: Spacing.sm, paddingBottom: 2 },
+  headerAction: { minHeight: 34, justifyContent: 'center', paddingHorizontal: Spacing.md, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.dark.border, backgroundColor: Colors.dark.surface2 },
+  headerActionText: { color: Colors.dark.textMuted, fontSize: 11, fontWeight: '700' },
+  chaosButton: { minHeight: 36, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: Spacing.md, borderRadius: Radius.full, backgroundColor: Colors.dark.primary },
+  chaosButtonText: { color: Colors.dark.background, fontSize: 10, fontWeight: '900', letterSpacing: 0.55 },
   banner: { backgroundColor: 'rgba(255,180,0,0.1)', padding: Spacing.sm, alignItems: 'center' },
   msgRow: { flexDirection: 'row', marginBottom: Spacing.sm, alignItems: 'flex-end' },
   msgAvatar: { width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.dark.glass, marginRight: Spacing.sm },
