@@ -14,7 +14,7 @@ export default function GatheringDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
-  const [g, setG = useState<Gathering | null>(null);
+  const [g, setG] = useState<Gathering | null>(null);
   const [msgs, setMsgs] = useState<Message[]>([]);
   const [text, setText] = useState('');
   const [host, setHost] = useState<any>(null);
