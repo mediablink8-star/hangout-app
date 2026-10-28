@@ -37,6 +37,10 @@
           "configureAndroidBackup": true
         }
       ]
-    ]
+    ],
+    "web": {
+      "output": "single",
+      "bundler": "metro"
+    }
   }
 }
