@@ -341,3 +341,35 @@ test('publish fails safely with 502/503 when storage is not configured and creat
     storage.get = original.get;
   }
 });
+
+
+test('feed comments persist, validate input, and respect blocks', async () => {
+  const signup = async (email, display_name) => {
+    const r = await req('POST', '/auth/signup', { email, password: 'comment-test-password', display_name, birth_date: '2000-01-01' });
+    assert.strictEqual(r.status, 200);
+    return r.body;
+  };
+  const author = await signup('comment-author@test.com', 'Author');
+  const commenter = await signup('commenter@test.com', 'Commenter');
+  const post = await req('POST', '/feed', { body: 'A safe public post', public_consent: true }, author.token);
+  assert.strictEqual(post.status, 201);
+  const created = await req('POST', `/feed/${post.body.id}/comments`, { body: '  Nice post!  ' }, commenter.token);
+  assert.strictEqual(created.status, 201);
+  const list = await req('GET', `/feed/${post.body.id}/comments`, null, author.token);
+  assert.strictEqual(list.status, 200);
+  assert.strictEqual(list.body.length, 1);
+  assert.strictEqual(list.body[0].body, 'Nice post!');
+  assert.strictEqual(list.body[0].author.id, commenter.user.id);
+  assert.strictEqual((await req('POST', `/feed/${post.body.id}/comments`, { body: '   ' }, commenter.token)).status, 400);
+  assert.strictEqual((await req('POST', `/feed/${post.body.id}/comments`, { body: 'x'.repeat(1001) }, commenter.token)).status, 400);
+  await req('POST', '/blocks', { user_id: author.user.id }, commenter.token);
+  assert.strictEqual((await req('GET', `/feed/${post.body.id}/comments`, null, commenter.token)).status, 404);
+  assert.strictEqual((await req('POST', `/feed/${post.body.id}/comments`, { body: 'Blocked comment' }, commenter.token)).status, 404);
+});
+
+test('comments require authentication and reject missing posts', async () => {
+  assert.strictEqual((await req('GET', '/feed/missing-post/comments')).status, 401);
+  const signup = await req('POST', '/auth/signup', { email: 'comment-missing@test.com', password: 'comment-test-password', display_name: 'Missing', birth_date: '2000-01-01' });
+  assert.strictEqual((await req('GET', '/feed/missing-post/comments', null, signup.body.token)).status, 404);
+  assert.strictEqual((await req('POST', '/feed/missing-post/comments', { body: 'Hello' }, signup.body.token)).status, 404);
+});
