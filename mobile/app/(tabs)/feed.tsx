@@ -82,7 +82,7 @@ export default function Feed() {
         <TouchableOpacity accessibilityRole="button" accessibilityLabel="Open your profile" style={styles.feedProfile} onPress={() => router.push('/(tabs)/profile')}>
           {user.avatar_url ? <Image source={{ uri: user.avatar_url }} style={styles.feedProfileImage} /> : <Text style={styles.feedProfileInitial}>{user.display_name?.trim()?.charAt(0)?.toUpperCase() || 'H'}</Text>}
         </TouchableOpacity>
-        <View style={styles.feedHeaderLabel}><Text style={styles.feedHeaderTitle}>The Circle</Text><Text style={styles.feedHeaderSubtitle}>Your people, your moments</Text></View>
+        <View style={{ flex: 1 }} />
         <TouchableOpacity accessibilityRole="button" accessibilityLabel="Open friends" style={styles.headerIcon} onPress={() => router.push('/friends')}>
           <Ionicons name="people-outline" size={19} color={Colors.dark.text} />
         </TouchableOpacity>
