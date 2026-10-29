@@ -8,7 +8,7 @@ interface Props {
   onSelect: (id: string) => void;
 }
 
-const CAT_EMOJI: Record<string, string> = { coffee:'☕', study:'📚', sports:'⚽', outdoors:'🌲', bar:'🍻', party:'🎉', other:'📍' };
+const CAT_EMOJI: Record<string, string> = { coffee:'✦', study:'✦', sports:'✦', outdoors:'✦', bar:'✦', party:'✦', other:'✦' };
 
 export default function HangoutMap({ gatherings, onSelect }: Props) {
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -52,28 +52,28 @@ export default function HangoutMap({ gatherings, onSelect }: Props) {
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<style>html,body,#map{height:100%;margin:0;} body{background:#0B0F14;font-family:sans-serif;}</style>
+<style>html,body,#map{height:100%;width:100%;margin:0;background:#0C0A12}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}.leaflet-container{background:#0C0A12;font:14px sans-serif}.leaflet-tile{filter:hue-rotate(242deg) saturate(.62) brightness(.82)}.leaflet-control-attribution{background:rgba(18,13,25,.92)!important;color:#C5B9D7!important;font-size:9px!important}.leaflet-control-attribution a{color:#E78AD7!important}.leaflet-bar a{background:#171321!important;color:#F7F1FA!important;border-color:rgba(231,138,215,.18)!important}.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#171321;color:#F7F1FA;border:1px solid rgba(231,138,215,.24);border-radius:14px}.hangout-marker{filter:drop-shadow(0 4px 10px rgba(231,138,215,.35))}</style>
 </head><body>
 <div id="map"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const data = ${data};
 const userCoords = ${uc};
-const map = L.map('map').setView(userCoords ? [userCoords.lat, userCoords.lng] : [40.7128,-74.006], 13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 }).addTo(map);
-const emojiMap = {coffee:'☕',study:'📚',sports:'⚽',outdoors:'🌲',bar:'🍻',party:'🎉',other:'📍'};
+const map = L.map('map', { zoomControl:false }).setView(userCoords ? [userCoords.lat, userCoords.lng] : [37.9838,23.7275], 13);\nL.control.zoom({position:'bottomright'}).addTo(map);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19 }).addTo(map);
+const emojiMap = {coffee:'✦',study:'✦',sports:'✦',outdoors:'✦',bar:'✦',party:'✦',other:'✦'};\nconst safe = value => String(value || '').replace(/[&<>\"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[ch]));
 data.forEach(g => {
   if (!g.exact) {
-    L.circle([g.lat,g.lng], {radius:300, color:'#C6FF3D', fillColor:'#C6FF3D', fillOpacity:0.12, weight:1.5}).addTo(map)
-      .bindPopup('<b>'+g.title+'</b><br/>'+g.category+'<br/><small>~300m area (approx)</small>');
+    L.circle([g.lat,g.lng], {radius:300, color:'#E78AD7', fillColor:'#B9A0F2', fillOpacity:0.13, weight:1.5}).addTo(map)
+      .bindPopup('<b>'+safe(g.title)+'</b><br/>'+safe(g.category)+'<br/><small>Approximate area · exact location shared after approval</small>')
+      .on('click', () => { window.parent.postMessage({type:'select', id: g.id}, '*'); });
   } else {
-    const icon = L.divIcon({ className:'hangout-marker', html:'<div style="background:#C6FF3D;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid #0B0F14;box-shadow:0 2px 6px rgba(0,0,0,0.4)">'+(emojiMap[g.category]||'📍')+'</div>', iconSize:[32,32], iconAnchor:[16,16] });
+    const icon = L.divIcon({ className:'hangout-marker', html:'<div style="background:linear-gradient(135deg,#E78AD7,#B9A0F2);color:#241421;width:32px;height:32px;border-radius:12px 12px 12px 4px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;border:2px solid #F7F1FA;box-shadow:0 4px 18px rgba(231,138,215,.35)">'+(emojiMap[g.category]||'📍')+'</div>', iconSize:[32,32], iconAnchor:[16,16] });
     L.marker([g.lat,g.lng], { icon }).addTo(map)
-      .bindPopup('<b>'+g.title+'</b><br/>'+g.category+'<br/>'+(g.address||''))
+      .bindPopup('<b>'+safe(g.title)+'</b><br/>'+safe(g.category)+'<br/>'+(g.exact ? safe(g.address||'') : 'Approximate area'))
       .on('click', () => { window.parent.postMessage({type:'select', id: g.id}, '*'); });
   }
-  // unapproved also get a marker (circle only) but clickable
-  if (!g.exact) {
+  /* Approximate gatherings intentionally use only the privacy circle, not a precise-looking pin. */\n  if (false && !g.exact) {
     const icon = L.divIcon({ className:'hangout-marker', html:'<div style="background:#C6FF3D;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid #0B0F14;opacity:0.85">'+(emojiMap[g.category]||'📍')+'</div>', iconSize:[32,32], iconAnchor:[16,16] });
     L.marker([g.lat,g.lng], { icon }).addTo(map)
       .bindPopup('<b>'+g.title+'</b><br/>'+g.category+'<br/><small>~300m area (approx)</small>')
@@ -81,7 +81,7 @@ data.forEach(g => {
   }
 });
 if (userCoords) {
-  L.circleMarker([userCoords.lat, userCoords.lng], {radius:8, color:'#fff', fillColor:'#C6FF3D', fillOpacity:1}).addTo(map).bindPopup('You are here');
+  L.circleMarker([userCoords.lat, userCoords.lng], {radius:8, color:'#fff', fillColor:'#E78AD7', fillOpacity:1}).addTo(map).bindPopup('You are here');
 } else if (data.length) {
   const b = L.latLngBounds(data.map(g=>[g.lat,g.lng]));
   map.fitBounds(b, {padding:[40,40]});
@@ -107,8 +107,8 @@ if (userCoords) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
   iframe: { flex: 1, border: 'none', width: '100%', height: '100%' } as any,
-  statusBar: { position: 'absolute', top: 8, left: 8, backgroundColor: 'rgba(0,0,0,0.7)', padding: 6, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  statusBar: { position: 'absolute', top: 8, left: 8, backgroundColor: 'rgba(23,19,33,0.92)', padding: 9, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(231,138,215,0.22)', flexDirection: 'row', alignItems: 'center', gap: 8 },
   statusText: { color: Colors.dark.text, fontSize: 12 },
-  retryBtn: { backgroundColor: Colors.dark.primary, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
-  retryText: { color: Colors.dark.background, fontSize: 11, fontWeight: '700' },
+  retryBtn: { backgroundColor: 'rgba(231,138,215,0.16)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
+  retryText: { color: Colors.dark.text, fontSize: 11, fontWeight: '700' },
 });
