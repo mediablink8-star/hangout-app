@@ -7,6 +7,7 @@ import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { Gathering } from '../../lib/types';
 import LiquidGlassBackground from '../../components/LiquidGlassBackground';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function Profile() {
   const router = useRouter();
@@ -91,7 +92,7 @@ export default function Profile() {
     <View style={styles.screenRoot}>
       <LiquidGlassBackground />
       <ScrollView style={[styles.container, { backgroundColor: 'transparent' }]} contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 132 }}>
-      <View style={styles.brandRow}><View style={styles.brandLockup}><View style={styles.brandMark}><Text style={styles.brandMarkText}>H</Text></View><View><Text style={styles.brandName}>Hangout</Text><Text style={styles.brandCaption}>YOUR CIRCLE, YOUR WAY</Text></View></View><TouchableOpacity accessibilityRole="button" accessibilityLabel="Open notifications" style={styles.headerAction} onPress={() => router.push('/notifications')}><Text style={styles.headerActionText}>Notifications ↗</Text></TouchableOpacity></View>
+      <View style={styles.brandRow}><View style={styles.brandLockup}><View style={styles.brandMark}><Text style={styles.brandMarkText}>H</Text></View><View><Text style={styles.brandName}>Hangout</Text><Text style={styles.brandCaption}>YOUR CIRCLE, YOUR WAY</Text></View></View><TouchableOpacity accessibilityRole="button" accessibilityLabel="Open notifications" style={styles.headerAction} onPress={() => router.push('/notifications')}><Ionicons name="notifications-outline" size={18} color={Colors.dark.text} /></TouchableOpacity></View>
       {editing ? (
         <View>
           <TouchableOpacity onPress={pickAvatar} style={{ alignSelf: 'center' }}>
@@ -128,8 +129,9 @@ export default function Profile() {
               {user.is_founding_host ? <Text style={[Typography.caption, { color: Colors.dark.primary }]}>✦ Founding host</Text> : null}
               <Text style={[Typography.caption, { color: Colors.dark.textMuted }]}>{user.bio}</Text>
             </View>
-            <TouchableOpacity onPress={() => setEditing(true)}>
-              <Text style={{ color: Colors.dark.primary, fontWeight: '600' }}>Edit</Text>
+            <TouchableOpacity accessibilityRole="button" onPress={() => setEditing(true)} style={styles.editButton}>
+              <Ionicons name="pencil-outline" size={13} color={Colors.dark.text} />
+              <Text style={styles.editButtonText}>Edit profile</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.profileStats}><View style={styles.statItem}><Text style={styles.statValue}>{hosting.length}</Text><Text style={styles.statLabel}>Hosting</Text><View style={styles.statMeter}><View style={[styles.statMeterFill, { width: `${Math.min(hosting.length / 10, 1) * 100}%` }]} /></View></View><View style={styles.statDivider}/><View style={styles.statItem}><Text style={styles.statValue}>{attending.length}</Text><Text style={styles.statLabel}>Going</Text><View style={styles.statMeter}><View style={[styles.statMeterFill, { width: `${Math.min(attending.length / 10, 1) * 100}%` }]} /></View></View><View style={styles.statDivider}/><View style={styles.statItem}><Text style={styles.statValue}>{posts.length}</Text><Text style={styles.statLabel}>Posts</Text><View style={styles.statMeter}><View style={[styles.statMeterFill, { width: `${Math.min(posts.length / 10, 1) * 100}%` }]} /></View></View><View style={styles.statDivider}/><View style={styles.statItem}><Text style={styles.statValue}>{followingCount}</Text><Text style={styles.statLabel}>Following</Text><View style={styles.statMeter}><View style={[styles.statMeterFill, { width: `${Math.min(followingCount / 10, 1) * 100}%` }]} /></View></View></View>
@@ -185,8 +187,9 @@ const styles = StyleSheet.create({
   brandMarkText: { color: Colors.dark.background, fontSize: 19, fontWeight: '900' },
   brandName: { color: Colors.dark.text, fontSize: 17, fontWeight: '800' },
   brandCaption: { color: Colors.dark.textMuted, fontSize: 8, letterSpacing: 0.7, marginTop: 1 },
-  headerAction: { paddingHorizontal: Spacing.sm, paddingVertical: Spacing.sm, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.dark.borderStrong, backgroundColor: Colors.dark.surface },
-  headerActionText: { color: Colors.dark.primary, fontSize: 10, fontWeight: '700' },
+  headerAction: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.dark.borderStrong, backgroundColor: 'rgba(255,255,255,0.055)' },
+  editButton: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 11, paddingVertical: 8, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.dark.borderStrong, backgroundColor: 'rgba(255,255,255,0.055)' },
+  editButtonText: { color: Colors.dark.text, fontSize: 11, fontWeight: '700' },
   profileHero: { backgroundColor: Colors.dark.surface, borderRadius: 26, padding: 18, borderWidth: 1, borderColor: Colors.dark.borderStrong, shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 3 },
   header: { flexDirection: 'row', alignItems: 'center' },
   profileStats: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', marginTop: Spacing.lg, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.dark.border },
@@ -194,7 +197,7 @@ const styles = StyleSheet.create({
   statValue: { color: Colors.dark.text, fontSize: 18, fontWeight: '900' },
   statLabel: { color: Colors.dark.textMuted, fontSize: 10 },
   statDivider: { width: 1, height: 24, backgroundColor: Colors.dark.borderStrong },
-  statMeter: { width: '54%', height: 3, marginTop: 4, borderRadius: 2, backgroundColor: Colors.dark.surface3, overflow: 'hidden' },
+  statMeter: { display: 'none' },
   statMeterFill: { height: '100%', borderRadius: 2, backgroundColor: Colors.dark.primary },
   avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: Colors.dark.glass, borderWidth: 2, borderColor: Colors.dark.primary },
   avatarFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#24263A' },

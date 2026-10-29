@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
   overlay: { ...StyleSheet.absoluteFillObject, pointerEvents: 'box-none' as any },
   header: { marginHorizontal: Spacing.md, marginTop: Spacing.xs, padding: Spacing.md, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, backgroundColor: 'rgba(13,14,23,0.92)', borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.dark.borderStrong },
-  headingIcon: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: 'rgba(155,140,255,0.14)' },
+  headingIcon: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: 'rgba(231,138,215,0.14)' },
   title: { ...Typography.h3, color: Colors.dark.text },
   subtitle: { color: Colors.dark.textMuted, fontSize: 11, marginTop: 2 },
   countPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 7, borderRadius: Radius.full, backgroundColor: Colors.dark.surface2 },
