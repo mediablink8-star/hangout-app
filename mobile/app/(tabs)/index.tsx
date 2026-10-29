@@ -13,10 +13,18 @@ import { distanceInKm, IRL_MOODS, IrlMood, parseMissionDescription } from '../..
 
 const CATS: Category[] = ['coffee', 'study', 'sports', 'outdoors', 'bar', 'party', 'other'];
 
+function categoryIcon(category: string) {
+  switch (category) {
+    case 'coffee': return 'cafe-outline'; case 'study': return 'book-outline'; case 'sports': return 'football-outline';
+    case 'outdoors': return 'leaf-outline'; case 'bar': return 'wine-outline'; case 'party': return 'musical-notes-outline'; default: return 'sparkles-outline';
+  }
+}
+
 export default function MapHome() {
   const router = useRouter();
   const { user } = useAuth();
   const [gatherings, setGatherings] = useState<Gathering[]>([]);
+  const [showMap, setShowMap] = useState(false);
   const [cat, setCat] = useState<Category | null>(null);
   const [timeFilter, setTimeFilter] = useState<'all' | 'now' | 'today' | 'upcoming'>('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -145,81 +153,109 @@ export default function MapHome() {
           <Ionicons name="arrow-forward" size={18} color={Colors.dark.primary} />
         </TouchableOpacity>
       </View>
-      <View style={styles.filters}>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing.md, alignItems: 'center' }}>
-          <TouchableOpacity style={[styles.chip, !cat && styles.chipOn]} onPress={() => { setIrlSearch(null); setCat(null); }}>
-            <Text style={[styles.chipText, !cat && styles.chipTextOn]}>All</Text>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.exploreContent}>
+        <View style={styles.exploreIntro}>
+          <Text style={styles.exploreEyebrow}>YOUR NEXT STORY STARTS HERE</Text>
+          <Text style={styles.exploreHeadline}>Find your <Text style={{ color: Colors.dark.primary }}>people.</Text></Text>
+          <Text style={styles.exploreSubhead}>Real people. Real plans. Real moments.</Text>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRail}>
+          {([{ id: 'all', label: 'All' }, ...CATS.map((value) => ({ id: value, label: value.charAt(0).toUpperCase() + value.slice(1) }))]).map((item) => (
+            <TouchableOpacity key={item.id} accessibilityRole="button" accessibilityState={{ selected: item.id === 'all' ? !cat : cat === item.id }} style={[styles.chip, (item.id === 'all' ? !cat : cat === item.id) && styles.chipOn]} onPress={() => { setIrlSearch(null); setCat(item.id === 'all' ? null : item.id as Category); }}>
+              <Text style={[styles.chipText, (item.id === 'all' ? !cat : cat === item.id) && styles.chipTextOn]}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+        <View style={styles.discoveryActions}>
+          <TouchableOpacity style={styles.discoveryActionCard} onPress={() => setShowMap(true)}>
+            <View style={styles.discoveryActionIcon}><Ionicons name="navigate" size={18} color={Colors.dark.background} /></View>
+            <Text style={styles.discoveryActionTitle}>Near you</Text>
+            <Text style={styles.discoveryActionCopy}>Explore plans on the live map</Text>
+            <Ionicons name="arrow-forward" size={17} color={Colors.dark.primary} style={styles.actionArrow} />
           </TouchableOpacity>
-          {CATS.map((c) => (
-            <TouchableOpacity key={c} style={[styles.chip, cat === c && styles.chipOn]} onPress={() => { setIrlSearch(null); setCat(c); }}>
-              <Text style={[styles.chipText, cat === c && styles.chipTextOn]}>{c}</Text>
-            </TouchableOpacity>
-          ))}
-          {(cat || timeFilter !== 'all' || irlSearch) && (
-            <TouchableOpacity style={styles.clearBtn} onPress={() => { setCat(null); setTimeFilter('all'); setIrlSearch(null); }}>
-              <Text style={styles.clearText}>Clear</Text>
-            </TouchableOpacity>
-          )}
-        </ScrollView>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing.md, marginTop: Spacing.xs, alignItems: 'center' }}>
-          {(['all', 'now', 'today', 'upcoming'] as const).map((t) => (
-            <TouchableOpacity key={t} style={[styles.chip, timeFilter === t && styles.chipOn]} onPress={() => { setIrlSearch(null); setTimeFilter(t); }}>
-              <Text style={[styles.chipText, timeFilter === t && styles.chipTextOn]}>{t === 'all' ? 'Any time' : t === 'now' ? 'Happening now' : t === 'today' ? 'Later today' : 'Upcoming'}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-        {irlSearch && (
-          <View style={styles.searchScope}>
-            <Ionicons name="navigate" size={14} color={Colors.dark.primary} />
-            <Text style={styles.searchScopeText}>{IRL_MOODS.find((item) => item.id === irlSearch.mood)?.label} plans · within about {irlSearch.radiusKm} km</Text>
-            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Clear IRL mode filters" onPress={() => setIrlSearch(null)}><Ionicons name="close-circle" size={18} color={Colors.dark.textMuted} /></TouchableOpacity>
+          <TouchableOpacity style={styles.discoveryActionCard} onPress={() => { setIrlSearch(null); setCat(null); setTimeFilter('upcoming'); }}>
+            <View style={styles.discoveryActionIcon}><Ionicons name="calendar" size={18} color={Colors.dark.background} /></View>
+            <Text style={styles.discoveryActionTitle}>Upcoming</Text>
+            <Text style={styles.discoveryActionCopy}>See what's happening next</Text>
+            <Ionicons name="arrow-forward" size={17} color={Colors.dark.primary} style={styles.actionArrow} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.sectionHeading}>
+          <Text style={styles.sectionTitle}>Popular plans</Text>
+          <TouchableOpacity onPress={() => { setCat(null); setTimeFilter('upcoming'); }}><Text style={styles.seeAll}>See all →</Text></TouchableOpacity>
+        </View>
+        {isLoading && gatherings.length === 0 ? (
+          <View style={styles.planEmpty}><ActivityIndicator color={Colors.dark.primary} /><Text style={styles.statusText}>Finding plans for you…</Text></View>
+        ) : gatherings.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.planRail}>
+            {gatherings.slice(0, 8).map((g) => (
+              <TouchableOpacity key={g.id} accessibilityRole="button" style={styles.planCard} onPress={() => router.push(`/g/${g.id}`)}>
+                <View style={styles.planImagePlaceholder}>
+                  <Ionicons name={categoryIcon(g.category) as any} size={32} color={Colors.dark.primary} />
+                  <View style={styles.planCategory}><Text style={styles.planCategoryText}>{g.category}</Text></View>
+                  <View style={styles.planCount}><Ionicons name="people" size={12} color={Colors.dark.text} /><Text style={styles.planCountText}>{g.spots_left ?? g.max_guests} spots</Text></View>
+                </View>
+                <View style={styles.planDetails}>
+                  <Text numberOfLines={1} style={styles.planTitle}>{g.title}</Text>
+                  <Text numberOfLines={1} style={styles.planMeta}><Ionicons name="time-outline" size={12} />  {new Date(g.start_time).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</Text>
+                  <Text numberOfLines={1} style={styles.planMeta}><Ionicons name="location-outline" size={12} />  {g.address || 'Location shared after joining'}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={styles.planEmpty}>
+            <Ionicons name="sparkles-outline" size={25} color={Colors.dark.primary} />
+            <Text style={styles.discoveryActionTitle}>Be the first to make a plan</Text>
+            <Text style={styles.discoveryActionCopy}>Host a hangout and give people a reason to get out.</Text>
+            <TouchableOpacity style={styles.hostInlineButton} onPress={() => router.push('/host/new')}><Text style={styles.hostInlineButtonText}>Create a hangout</Text></TouchableOpacity>
           </View>
         )}
-      </View>
-      <HangoutMap gatherings={gatherings} onSelect={(id: string) => router.push(`/g/${id}`)} />
-      {isLoading && (
-        <View accessibilityLiveRegion="polite" style={styles.statusCard}>
-          <ActivityIndicator color={Colors.dark.primary} size="small" />
-          <Text style={styles.statusText}>Finding hangouts…</Text>
+        <View style={styles.sectionHeading}>
+          <Text style={styles.sectionTitle}>People nearby</Text>
+          <TouchableOpacity onPress={() => router.push('/friends')}><Text style={styles.seeAll}>Find people →</Text></TouchableOpacity>
         </View>
-      )}
-      {loadError && !isLoading && (
-        <View accessibilityLiveRegion="polite" style={styles.statusCard}>
-          <Text style={[Typography.h3, { color: Colors.dark.text }]}>Map couldn’t load</Text>
-          <Text style={[Typography.caption, { color: Colors.dark.textMuted, marginTop: Spacing.xs }]}>Check your connection and try again.</Text>
-          <TouchableOpacity accessibilityRole="button" style={styles.retryBtn} onPress={load}>
-            <Text style={styles.retryText}>Try again</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-      {!isLoading && !loadError && gatherings.length === 0 && (
-        <View style={styles.emptyCard}>
-          <Text style={[Typography.h3, { color: Colors.dark.text, textAlign: 'center' }]}>Nothing happening nearby yet.</Text>
-          <Text style={[Typography.caption, { color: Colors.dark.textMuted, textAlign: 'center', marginTop: Spacing.xs }]}>
-            {irlSearch ? 'No real plans match this mood and radius yet. Try a wider area or host a mission.' : 'No gatherings match your current search. Be the first to host, widen the area, or view upcoming plans.'}
-          </Text>
-          <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md, flexWrap: 'wrap' }}>
-            <TouchableOpacity style={[styles.emptyBtn, { flex: 1, minWidth: 120 }]} onPress={() => router.push(irlSearch ? '/host/new?mission=1' : '/host/new')}>
-              <Text style={styles.emptyBtnText}>{irlSearch ? 'Host a mission' : 'Host a Hangout'}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.emptyBtnSecondary, { flex: 1, minWidth: 120 }]} onPress={() => { setCat(null); setTimeFilter('all'); setIrlSearch(null); }}>
-              <Text style={styles.emptyBtnSecondaryText}>Explore a wider area</Text>
-            </TouchableOpacity>
+        <TouchableOpacity style={styles.peopleCard} onPress={() => router.push('/friends')}>
+          <View style={styles.peopleIcon}><Ionicons name="people" size={23} color={Colors.dark.background} /></View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.discoveryActionTitle}>Your city is full of potential friends</Text>
+            <Text style={styles.discoveryActionCopy}>Find people, meet through shared plans, and build your circle.</Text>
           </View>
-          <TouchableOpacity style={[styles.emptyBtnSecondary, { marginTop: Spacing.sm }]} onPress={() => { setIrlSearch(null); setTimeFilter('upcoming'); }}>
-            <Text style={styles.emptyBtnSecondaryText}>View upcoming plans</Text>
-          </TouchableOpacity>
-          {(cat || timeFilter !== 'all' || irlSearch) && (
-            <TouchableOpacity style={{ marginTop: Spacing.sm, alignSelf: 'center' }} onPress={() => { setCat(null); setTimeFilter('all'); setIrlSearch(null); }}>
-              <Text style={{ color: Colors.dark.primary, fontSize: 13, fontWeight: '600' }}>Clear filters</Text>
-            </TouchableOpacity>
-          )}
+          <Ionicons name="arrow-forward" size={18} color={Colors.dark.primary} />
+        </TouchableOpacity>
+        <View style={styles.sectionHeading}>
+          <Text style={styles.sectionTitle}>Make something happen</Text>
         </View>
-      )}
-      {gatherings.length > 0 && !isLoading && !loadError && <TouchableOpacity style={styles.fab} onPress={() => router.push('/host/new')} activeOpacity={0.8}>
-        <Text style={styles.fabText}>+ Host</Text>
-      </TouchableOpacity>}
+        <TouchableOpacity style={styles.irlCta} onPress={() => setIrlSheet(true)}>
+          <View style={styles.irlCtaIcon}><Ionicons name="sparkles" size={20} color={Colors.dark.background} /></View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.irlCtaTitle}>I’m bored</Text>
+            <Text style={styles.irlCtaCopy}>Find a real plan for the next 24 hours</Text>
+          </View>
+          <Ionicons name="arrow-forward" size={18} color={Colors.dark.primary} />
+        </TouchableOpacity>
+        {(cat || timeFilter !== 'all' || irlSearch) && (
+          <TouchableOpacity style={styles.clearFiltersInline} onPress={() => { setCat(null); setTimeFilter('all'); setIrlSearch(null); }}>
+            <Text style={styles.seeAll}>Clear filters</Text>
+          </TouchableOpacity>
+        )}
+      </ScrollView>
+      <Modal visible={showMap} animationType="slide" onRequestClose={() => setShowMap(false)}>
+        <SafeAreaView style={styles.mapModal} edges={['top']}>
+          <View style={styles.mapModalHeader}>
+            <TouchableOpacity style={styles.iconBtn} onPress={() => setShowMap(false)}><Ionicons name="arrow-back" size={20} color={Colors.dark.text} /></TouchableOpacity>
+            <View style={{ flex: 1, marginLeft: Spacing.md }}>
+              <Text style={styles.sectionTitle}>Explore the map</Text>
+              <Text style={styles.discoveryActionCopy}>Real plans around your city</Text>
+            </View>
+            <TouchableOpacity style={styles.iconBtn} onPress={() => { setShowMap(false); setIrlSheet(true); }}><Ionicons name="sparkles" size={18} color={Colors.dark.primary} /></TouchableOpacity>
+          </View>
+          <View style={{ flex: 1 }}>
+            <HangoutMap gatherings={gatherings} onSelect={(id: string) => { setShowMap(false); router.push(`/g/${id}`); }} />
+            {loadError && <View style={styles.mapError}><Text style={styles.statusText}>Map data couldn't refresh. Try again.</Text><TouchableOpacity onPress={load}><Text style={styles.seeAll}>Retry</Text></TouchableOpacity></View>}
+          </View>
+        </SafeAreaView>
+      </Modal>
       <Modal visible={irlSheet} transparent animationType="slide" onRequestClose={() => setIrlSheet(false)}>
         <View style={styles.sheetBackdrop}>
           <ScrollView style={styles.irlSheet} contentContainerStyle={styles.irlSheetContent} showsVerticalScrollIndicator={false}>
@@ -254,6 +290,41 @@ export default function MapHome() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
+  exploreContent: { paddingBottom: 124 },
+  exploreIntro: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, paddingBottom: Spacing.md },
+  exploreEyebrow: { color: Colors.dark.primary, fontSize: 9, fontWeight: '800', letterSpacing: 1.3, marginBottom: Spacing.xs },
+  exploreHeadline: { color: Colors.dark.text, fontSize: 31, lineHeight: 36, fontWeight: '900', letterSpacing: -1 },
+  exploreSubhead: { color: Colors.dark.textMuted, fontSize: 13, marginTop: 5 },
+  categoryRail: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md, gap: 7 },
+  discoveryActions: { flexDirection: 'row', gap: Spacing.sm, paddingHorizontal: Spacing.lg, marginTop: Spacing.xs },
+  discoveryActionCard: { flex: 1, minHeight: 132, padding: Spacing.md, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.dark.borderStrong, backgroundColor: Colors.dark.surface, overflow: 'hidden' },
+  discoveryActionIcon: { width: 28, height: 28, borderRadius: 9, backgroundColor: Colors.dark.primary, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.sm },
+  discoveryActionTitle: { color: Colors.dark.text, fontSize: 13, fontWeight: '800', lineHeight: 18 },
+  discoveryActionCopy: { color: Colors.dark.textMuted, fontSize: 11, lineHeight: 16, marginTop: 3 },
+  actionArrow: { position: 'absolute', right: 12, bottom: 12 },
+  sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+  sectionTitle: { color: Colors.dark.text, fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
+  seeAll: { color: Colors.dark.primary, fontSize: 12, fontWeight: '700' },
+  planRail: { paddingHorizontal: Spacing.lg, gap: Spacing.sm },
+  planCard: { width: 205, borderRadius: Radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: Colors.dark.borderStrong, backgroundColor: Colors.dark.surface },
+  planImagePlaceholder: { height: 118, backgroundColor: Colors.dark.surface3, alignItems: 'center', justifyContent: 'center' },
+  planCategory: { position: 'absolute', left: 10, bottom: 9, backgroundColor: Colors.dark.primary, paddingHorizontal: 9, paddingVertical: 4, borderRadius: Radius.full },
+  planCategoryText: { color: Colors.dark.background, fontSize: 10, fontWeight: '800', textTransform: 'capitalize' },
+  planCount: { position: 'absolute', right: 8, top: 8, flexDirection: 'row', gap: 4, alignItems: 'center', backgroundColor: 'rgba(5,8,5,0.72)', paddingHorizontal: 7, paddingVertical: 5, borderRadius: Radius.full },
+  planCountText: { color: Colors.dark.text, fontSize: 10, fontWeight: '700' },
+  planDetails: { padding: Spacing.md, gap: 7 },
+  planTitle: { color: Colors.dark.text, fontSize: 14, fontWeight: '800' },
+  planMeta: { color: Colors.dark.textMuted, fontSize: 10 },
+  planEmpty: { marginHorizontal: Spacing.lg, minHeight: 120, alignItems: 'center', justifyContent: 'center', padding: Spacing.lg, borderRadius: Radius.lg, backgroundColor: Colors.dark.surface, borderWidth: 1, borderColor: Colors.dark.border, gap: 6 },
+  hostInlineButton: { backgroundColor: Colors.dark.primary, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, borderRadius: Radius.full, marginTop: Spacing.sm },
+  hostInlineButtonText: { color: Colors.dark.background, fontSize: 12, fontWeight: '800' },
+  peopleCard: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, marginHorizontal: Spacing.lg, padding: Spacing.md, borderRadius: Radius.lg, backgroundColor: Colors.dark.surface, borderWidth: 1, borderColor: Colors.dark.borderStrong },
+  peopleIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: Colors.dark.primary, alignItems: 'center', justifyContent: 'center' },
+  clearFiltersInline: { alignItems: 'center', padding: Spacing.md },
+  mapModal: { flex: 1, backgroundColor: Colors.dark.background },
+  mapModalHeader: { flexDirection: 'row', alignItems: 'center', padding: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.dark.border },
+  mapError: { position: 'absolute', bottom: 20, left: Spacing.lg, right: Spacing.lg, backgroundColor: Colors.dark.surface, borderRadius: Radius.lg, padding: Spacing.md, alignItems: 'center', gap: Spacing.sm },
+
   header: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs, paddingBottom: Spacing.md, zIndex: 10, backgroundColor: Colors.dark.background },
   brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   brandLockup: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
