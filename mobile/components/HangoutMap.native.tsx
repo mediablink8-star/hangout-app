@@ -9,9 +9,7 @@ interface Props {
   onSelect: (id: string) => void;
 }
 
-// Use Leaflet + CARTO's public dark tiles inside a WebView rather than the
-// native Google Maps provider. This avoids requiring a Google Maps API key
-// just to display the map in an Expo development/production build.
+// // Use Leaflet with OpenStreetMap's standard tile service; no Google or CARTO API key is needed.
 export default function HangoutMap({ gatherings, onSelect }: Props) {
   const html = useMemo(() => {
     const pins = JSON.stringify(gatherings.map((g) => ({
@@ -57,8 +55,8 @@ export default function HangoutMap({ gatherings, onSelect }: Props) {
 <script>
   const pins = __PINS__;
   const map = L.map('map', { zoomControl: false }).setView([37.9838,23.7275],12);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', maxZoom: 19
   }).addTo(map);
   L.control.zoom({ position: 'bottomright' }).addTo(map);
   const icon = L.divIcon({ className: '', html: '<div class="hangout-pin"><span>✦</span></div>', iconSize: [32,32], iconAnchor: [16,26], popupAnchor: [0,-26] });
