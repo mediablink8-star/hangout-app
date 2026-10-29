@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node test.js"
+    "test": "node test.js",
+    "demo:seed": "node demoData.js seed",
+    "demo:reset": "node demoData.js reset"
   },
   "keywords": [],
   "author": "",
