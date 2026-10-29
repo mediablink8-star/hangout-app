@@ -274,4 +274,12 @@ const styles = StyleSheet.create({
   avatarInitial: { color: Colors.dark.primary, fontSize: 16, fontWeight: '900' },
   media: { width: '100%', height: 240, borderRadius: Radius.md, marginTop: Spacing.sm, backgroundColor: Colors.dark.glass },
   actions: { marginTop: Spacing.sm, flexDirection: 'row' },
+  commentsPanel: { marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.dark.border },
+  commentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm, marginBottom: Spacing.sm },
+  commentAuthor: { color: Colors.dark.text, fontSize: 12, fontWeight: '700' },
+  commentBody: { color: Colors.dark.text, fontSize: 13, lineHeight: 18, flexShrink: 1 },
+  commentHint: { color: Colors.dark.textMuted, fontSize: 12, marginVertical: Spacing.sm },
+  commentComposer: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.sm },
+  commentInput: { flex: 1, minHeight: 40, maxHeight: 90, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.full, backgroundColor: Colors.dark.background, borderWidth: 1, borderColor: Colors.dark.border, color: Colors.dark.text, fontSize: 13 },
+  commentSend: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.dark.primary },
 });
