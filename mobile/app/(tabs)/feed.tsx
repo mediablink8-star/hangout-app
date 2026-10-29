@@ -32,6 +32,32 @@ export default function Feed() {
   const [body, setBody] = useState('');
   const [posting, setPosting] = useState(false);
   const [publicShareConfirmed, setPublicShareConfirmed] = useState(false);
+  const [commentOpen, setCommentOpen] = useState<Record<string, boolean>>({});
+  const [comments, setComments] = useState<Record<string, any[]>>({});
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [commentBusy, setCommentBusy] = useState<Record<string, boolean>>({});
+
+  const toggleComments = async (postId: string) => {
+    const opening = !commentOpen[postId];
+    setCommentOpen(prev => ({ ...prev, [postId]: opening }));
+    if (opening && !comments[postId]) {
+      try { const rows = await api.feedComments(postId); setComments(prev => ({ ...prev, [postId]: rows })); }
+      catch (e: any) { Alert.alert('Comments unavailable', e.message || 'Please try again.'); }
+    }
+  };
+
+  const sendComment = async (postId: string) => {
+    const value = (commentDrafts[postId] || '').trim();
+    if (!value || commentBusy[postId]) return;
+    setCommentBusy(prev => ({ ...prev, [postId]: true }));
+    try {
+      await api.createFeedComment(postId, value);
+      const rows = await api.feedComments(postId);
+      setComments(prev => ({ ...prev, [postId]: rows }));
+      setCommentDrafts(prev => ({ ...prev, [postId]: '' }));
+    } catch (e: any) { Alert.alert('Could not comment', e.message || 'Please try again.'); }
+    finally { setCommentBusy(prev => ({ ...prev, [postId]: false })); }
+  };
 
   const load = useCallback(async () => {
     setLoadError(false);
@@ -140,11 +166,13 @@ export default function Feed() {
       {posts.map((p) => (
         <View key={p.id} onLayout={event => { if (postId && p.id === postId) scrollRef.current?.scrollTo({ y: Math.max(0, event.nativeEvent.layout.y - 10), animated: true }); }} style={[styles.card, p.id === postId && styles.postHighlight]}>
           <View style={styles.authorRow}>
-            {p.author.avatar_url ? <Image source={{ uri: p.author.avatar_url }} style={styles.avatar} /> : <View style={[styles.avatar, styles.avatarFallback]}><Text style={styles.avatarInitial}>{p.author.display_name?.trim()?.charAt(0)?.toUpperCase() || '?'}</Text></View>}
-            <View style={{ marginLeft: Spacing.sm, flex: 1 }}>
-              <Text style={[Typography.body, { color: Colors.dark.text, fontWeight: '800', letterSpacing: -0.15 }]}>{p.author.display_name}</Text>
-              <Text style={[Typography.caption, { color: Colors.dark.textMuted }]}>{new Date(p.created_at).toLocaleString()}</Text>
-            </View>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel={`View ${p.author.display_name}'s profile`} onPress={() => router.push(`/u/${p.author.id}`)} style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              {p.author.avatar_url ? <Image source={{ uri: p.author.avatar_url }} style={styles.avatar} /> : <View style={[styles.avatar, styles.avatarFallback]}><Text style={styles.avatarInitial}>{p.author.display_name?.trim()?.charAt(0)?.toUpperCase() || '?'}</Text></View>}
+              <View style={{ marginLeft: Spacing.sm, flex: 1 }}>
+                <Text style={[Typography.body, { color: Colors.dark.text, fontWeight: '800', letterSpacing: -0.15 }]}>{p.author.display_name}</Text>
+                <Text style={[Typography.caption, { color: Colors.dark.textMuted }]}>{new Date(p.created_at).toLocaleString()}</Text>
+              </View>
+            </TouchableOpacity>
             {p.user_id === user.id && (
               <TouchableOpacity onPress={() => del(p.id)}><Text style={{ color: Colors.dark.danger }}>Delete</Text></TouchableOpacity>
             )}
@@ -159,8 +187,14 @@ export default function Feed() {
                 {p.liked ? '♥' : '♡'} {p.likes}
               </Text>
             </TouchableOpacity>
+            <TouchableOpacity accessibilityRole="button" onPress={() => toggleComments(p.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}><Ionicons name="chatbubble-outline" size={17} color={commentOpen[p.id] ? Colors.dark.primary : Colors.dark.textMuted} /><Text style={{ color: commentOpen[p.id] ? Colors.dark.primary : Colors.dark.textMuted, fontWeight: '600' }}>Comment</Text></TouchableOpacity>
             {p.user_id !== user.id && <TouchableOpacity accessibilityRole="button" onPress={() => requestRemoval(p.id)}><Text style={{ color: Colors.dark.textMuted, fontSize: 12 }}>Report</Text></TouchableOpacity>}
           </View>
+          {commentOpen[p.id] && <View style={styles.commentsPanel}>
+            {(comments[p.id] || []).map((comment: any) => <View key={comment.id} style={styles.commentRow}><TouchableOpacity onPress={() => router.push(`/u/${comment.author.id}`)}><Text style={styles.commentAuthor}>{comment.author.display_name}</Text></TouchableOpacity><Text style={styles.commentBody}>{comment.body}</Text></View>)}
+            {comments[p.id] && comments[p.id].length === 0 && <Text style={styles.commentHint}>Be the first to comment.</Text>}
+            <View style={styles.commentComposer}><TextInput accessibilityLabel="Write a comment" style={styles.commentInput} placeholder="Write a comment…" placeholderTextColor={Colors.dark.textMuted} value={commentDrafts[p.id] || ''} onChangeText={value => setCommentDrafts(prev => ({ ...prev, [p.id]: value }))} maxLength={1000} multiline /><TouchableOpacity accessibilityRole="button" accessibilityLabel="Send comment" disabled={!(commentDrafts[p.id] || '').trim() || !!commentBusy[p.id]} onPress={() => sendComment(p.id)} style={[styles.commentSend, (!(commentDrafts[p.id] || '').trim() || !!commentBusy[p.id]) && { opacity: 0.45 }]}>{commentBusy[p.id] ? <ActivityIndicator size="small" color={Colors.dark.background} /> : <Ionicons name="arrow-up" size={18} color={Colors.dark.background} />}</TouchableOpacity></View>
+          </View>}
         </View>
       ))}
       {posts.length === 0 && !initialLoading && !loadError && (
