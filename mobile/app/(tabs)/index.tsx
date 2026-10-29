@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Alert, ImageBackground, TextInput } from 'react-native';
+import { Animated, View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Alert, Image, ImageBackground, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius, Typography } from '../../constants/theme';
@@ -16,12 +16,12 @@ const CATS: Category[] = ['coffee', 'study', 'sports', 'outdoors', 'bar', 'party
 
 function categoryImage(category: string) {
   switch (category) {
-    case 'coffee': return 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=900&q=85';
-    case 'study': return 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=900&q=85';
-    case 'sports': return 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=900&q=85';
-    case 'outdoors': return 'https://images.unsplash.com/photo-1551632811-561732d1e306?auto=format&fit=crop&w=900&q=85';
-    case 'bar': return 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=900&q=85';
-    case 'party': return 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=900&q=85';
+    case 'coffee': return 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=900&q=85';
+    case 'study': return 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=900&q=85';
+    case 'sports': return 'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=900&q=85';
+    case 'outdoors': return 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=900&q=85';
+    case 'bar': return 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=85';
+    case 'party': return 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=900&q=85';
     default: return 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=85';
   }
 }
@@ -37,6 +37,7 @@ export default function MapHome() {
   const router = useRouter();
   const { user } = useAuth();
   const [gatherings, setGatherings] = useState<Gathering[]>([]);
+  const [following, setFollowing] = useState<{ id: string; display_name: string; avatar_url?: string }[]>([]);
   const [browseMode, setBrowseMode] = useState<'Subscriptions' | 'Explore'>('Explore');
   const [searchQuery, setSearchQuery] = useState('');
   const [showMap, setShowMap] = useState(false);
@@ -95,6 +96,14 @@ export default function MapHome() {
     }
   };
   useEffect(() => { load(); }, [cat, timeFilter, irlSearch]);
+  useEffect(() => { api.following().then((r: any) => setFollowing(Array.isArray(r?.following) ? r.following : [])).catch(() => setFollowing([])); }, []);
+
+  const visibleGatherings = gatherings.filter((g) => {
+    const query = searchQuery.trim().toLowerCase();
+    const matchesQuery = !query || (g.title + ' ' + g.category + ' ' + (g.address || '') + ' ' + (g.host?.display_name || '')).toLowerCase().includes(query);
+    const matchesSubscription = browseMode !== 'Subscriptions' || following.some((person) => person.id === g.host_id);
+    return matchesQuery && matchesSubscription;
+  });
   useEffect(() => {
     Animated.spring(introProgress, { toValue: 1, damping: 18, stiffness: 105, mass: 0.85, useNativeDriver: true }).start();
   }, [introProgress]);
@@ -159,14 +168,17 @@ export default function MapHome() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storyRail}>
           <TouchableOpacity style={styles.storyItem} onPress={() => router.push('/friends')}>
             <View style={[styles.storyRing, styles.storyAddRing]}><View style={styles.storyAdd}><Ionicons name="add" size={20} color={Colors.dark.text} /></View></View>
-            <Text style={styles.storyName}>Your circle</Text>
+            <Text style={styles.storyName}>Find people</Text>
           </TouchableOpacity>
-          {CATS.slice(0, 6).map((value, index) => (
-            <TouchableOpacity key={value} style={styles.storyItem} onPress={() => { setIrlSearch(null); setCat(value); }}>
-              <View style={[styles.storyRing, index % 3 === 0 && styles.storyRingHot]}><ImageBackground source={{ uri: categoryImage(value) }} style={styles.storyImage} imageStyle={{ borderRadius: 999 }}><View style={styles.storyImageTint} /></ImageBackground></View>
-              <Text numberOfLines={1} style={styles.storyName}>{value.charAt(0).toUpperCase() + value.slice(1)}</Text>
+          {following.slice(0, 8).map((person) => (
+            <TouchableOpacity key={person.id} style={styles.storyItem} onPress={() => router.push({ pathname: '/u/[id]', params: { id: person.id } } as any)}>
+              <View style={styles.storyRing}>
+                {person.avatar_url ? <Image source={{ uri: person.avatar_url }} style={styles.storyImage} /> : <View style={[styles.storyImage, styles.storyInitial]}><Text style={styles.storyInitialText}>{person.display_name?.trim()?.charAt(0)?.toUpperCase() || '?'}</Text></View>}
+              </View>
+              <Text numberOfLines={1} style={styles.storyName}>{person.display_name?.split(' ')[0] || 'Member'}</Text>
             </TouchableOpacity>
           ))}
+          {following.length === 0 && <TouchableOpacity style={styles.storyPrompt} onPress={() => router.push('/friends')}><Text style={styles.storyPromptTitle}>Build your circle</Text><Text style={styles.storyPromptCopy}>Follow hosts to see their plans here.</Text></TouchableOpacity>}
         </ScrollView>
         <View style={styles.referenceSegment}>
           {(['Subscriptions', 'Explore'] as const).map((mode) => (
@@ -197,20 +209,30 @@ export default function MapHome() {
         </View>
         {isLoading && gatherings.length === 0 ? (
           <View style={styles.planEmpty}><ActivityIndicator color={Colors.dark.primary} /><Text style={styles.statusText}>Finding plans for you…</Text></View>
-        ) : gatherings.filter((g) => !searchQuery.trim() || (g.title + ' ' + g.category + ' ' + (g.address || '')).toLowerCase().includes(searchQuery.trim().toLowerCase())).length > 0 ? (
+        ) : visibleGatherings.length > 0 ? (
           <View style={styles.planRail}>
-            {gatherings.filter((g) => !searchQuery.trim() || (g.title + ' ' + g.category + ' ' + (g.address || '')).toLowerCase().includes(searchQuery.trim().toLowerCase())).slice(0, 8).map((g) => (
-              <TouchableOpacity key={g.id} accessibilityRole="button" style={styles.planCard} onPress={() => router.push(`/g/${g.id}`)}>
+            {visibleGatherings.slice(0, 8).map((g) => (
+              <TouchableOpacity key={g.id} accessibilityRole="button" style={styles.planCard} onPress={() => router.push(`/g/${g.id}`)} activeOpacity={0.9}>
                 <ImageBackground source={{ uri: categoryImage(g.category) }} style={styles.planImagePlaceholder} imageStyle={styles.planImage} resizeMode="cover">
                   <View style={styles.planImageShade} />
-                  <View style={styles.planImageIcon}><Ionicons name={categoryIcon(g.category) as any} size={29} color={Colors.dark.text} /></View>
-                  <View style={styles.planCategory}><Text style={styles.planCategoryText}>{g.category}</Text></View>
-                  <View style={styles.planCount}><Ionicons name="people" size={12} color={Colors.dark.text} /><Text style={styles.planCountText}>{g.spots_left != null ? `${g.spots_left} spots left` : 'Open plan'}</Text></View>
+                  <View style={styles.planImageTop}>
+                    <View style={styles.planCategory}><Text style={styles.planCategoryText}>{g.category}</Text></View>
+                    <View style={styles.planCount}><Ionicons name="people-outline" size={11} color={Colors.dark.text} /><Text style={styles.planCountText}>{g.spots_left != null ? `${g.spots_left} spots left` : 'Open plan'}</Text></View>
+                  </View>
+                  <View style={styles.planImageBottom}>
+                    <Text numberOfLines={2} style={styles.planImageTitle}>{g.title}</Text>
+                    <Text numberOfLines={1} style={styles.planImageTime}><Ionicons name="time-outline" size={12} />  {new Date(g.start_time).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</Text>
+                  </View>
                 </ImageBackground>
                 <View style={styles.planDetails}>
-                  <Text numberOfLines={1} style={styles.planTitle}>{g.title}</Text>
-                  <Text numberOfLines={1} style={styles.planMeta}><Ionicons name="time-outline" size={12} />  {new Date(g.start_time).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</Text>
-                  <Text numberOfLines={1} style={styles.planMeta}><Ionicons name="location-outline" size={12} />  {g.address || 'Location shared after joining'}</Text>
+                  <View style={styles.planHostAvatar}>
+                    {g.host?.avatar_url ? <Image source={{ uri: g.host.avatar_url }} style={styles.planHostImage} /> : <Text style={styles.planHostInitial}>{g.host?.display_name?.trim()?.charAt(0)?.toUpperCase() || 'H'}</Text>}
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text numberOfLines={1} style={styles.planHostName}>{g.host?.display_name || 'Hangout host'}</Text>
+                    <Text numberOfLines={1} style={styles.planMeta}><Ionicons name="location-outline" size={11} />  {g.address || 'Location shared after joining'}</Text>
+                  </View>
+                  <Ionicons name="arrow-up-right" size={16} color={Colors.dark.textMuted} />
                 </View>
               </TouchableOpacity>
             ))}
@@ -218,9 +240,9 @@ export default function MapHome() {
         ) : (
           <View style={styles.planEmpty}>
             <Ionicons name="sparkles-outline" size={25} color={Colors.dark.primary} />
-            <Text style={styles.discoveryActionTitle}>{searchQuery.trim() ? 'No matches found' : 'Be the first to make a plan'}</Text>
-            <Text style={styles.discoveryActionCopy}>{searchQuery.trim() ? 'Try another search or category.' : 'Host a hangout and give people a reason to get out.'}</Text>
-            <TouchableOpacity style={styles.hostInlineButton} onPress={() => router.push('/host/new')}><Text style={styles.hostInlineButtonText}>Create a hangout</Text></TouchableOpacity>
+            <Text style={styles.discoveryActionTitle}>{searchQuery.trim() ? 'No matches found' : browseMode === 'Subscriptions' ? 'Your circle is just getting started' : 'Be the first to make a plan'}</Text>
+            <Text style={styles.discoveryActionCopy}>{searchQuery.trim() ? 'Try another search or category.' : browseMode === 'Subscriptions' ? 'Follow a host or explore public plans to find your people.' : 'Host a hangout and give people a reason to get out.'}</Text>
+            <TouchableOpacity style={styles.hostInlineButton} onPress={() => browseMode === 'Subscriptions' ? router.push('/friends') : router.push('/host/new')}><Text style={styles.hostInlineButtonText}>{browseMode === 'Subscriptions' ? 'Find people' : 'Create a hangout'}</Text></TouchableOpacity>
           </View>
         )}
         <View style={styles.sectionHeading}>
@@ -313,10 +335,13 @@ const styles = StyleSheet.create({
   storyRail: { paddingHorizontal: Spacing.lg, paddingBottom: 15, gap: 12, alignItems: 'flex-start' },
   storyItem: { width: 43, alignItems: 'center', gap: 5 },
   storyRing: { width: 43, height: 43, borderRadius: 22, padding: 2, borderWidth: 1.5, borderColor: 'rgba(231,113,205,0.8)', overflow: 'hidden' },
-  storyRingHot: { borderColor: '#F6BDA8' },
   storyAddRing: { borderColor: 'rgba(255,255,255,0.3)' },
-  storyImage: { flex: 1, overflow: 'hidden', borderRadius: 999 },
-  storyImageTint: { flex: 1, backgroundColor: 'rgba(25,13,29,0.12)' },
+  storyImage: { width: '100%', height: '100%', overflow: 'hidden', borderRadius: 999 },
+  storyInitial: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#33263C' },
+  storyInitialText: { color: Colors.dark.text, fontSize: 15, fontWeight: '800' },
+  storyPrompt: { width: 145, minHeight: 52, justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 7, borderRadius: 13, backgroundColor: 'rgba(255,255,255,0.055)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)' },
+  storyPromptTitle: { color: Colors.dark.text, fontSize: 10, fontWeight: '700' },
+  storyPromptCopy: { color: Colors.dark.textMuted, fontSize: 9, lineHeight: 13, marginTop: 2 },
   storyAdd: { flex: 1, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
   storyName: { color: Colors.dark.textMuted, fontSize: 9, maxWidth: 54, textAlign: 'center' },
   referenceSegment: { flexDirection: 'row', alignItems: 'center', marginHorizontal: Spacing.lg, marginBottom: Spacing.sm, padding: 4, borderRadius: Radius.full, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)' },
@@ -336,16 +361,22 @@ const styles = StyleSheet.create({
   seeAll: { color: Colors.dark.primary, fontSize: 12, fontWeight: '700' },
   planRail: { paddingHorizontal: Spacing.lg, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 },
   planCard: { width: '48.5%', borderRadius: 17, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.13)', backgroundColor: 'rgba(25,21,36,0.58)', marginBottom: 1 },
-  planImagePlaceholder: { height: 178, backgroundColor: '#24263A', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  planImage: { opacity: 0.94 },
-  planImageShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(11,8,18,0.28)' },
-  planImageIcon: { width: 54, height: 54, borderRadius: 18, backgroundColor: 'rgba(14,10,23,0.56)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.24)', alignItems: 'center', justifyContent: 'center' },
-  planCategory: { position: 'absolute', left: 10, bottom: 9, backgroundColor: Colors.dark.primary, paddingHorizontal: 9, paddingVertical: 4, borderRadius: Radius.full },
-  planCategoryText: { color: Colors.dark.background, fontSize: 10, fontWeight: '800', textTransform: 'capitalize' },
-  planCount: { position: 'absolute', right: 8, top: 8, flexDirection: 'row', gap: 4, alignItems: 'center', backgroundColor: 'rgba(14,10,23,0.76)', paddingHorizontal: 7, paddingVertical: 5, borderRadius: Radius.full },
-  planCountText: { color: Colors.dark.text, fontSize: 10, fontWeight: '700' },
-  planDetails: { padding: 10, gap: 5 },
-  planTitle: { color: Colors.dark.text, fontSize: 13, fontWeight: '800', letterSpacing: -0.2 },
+  planImagePlaceholder: { height: 188, backgroundColor: '#24202B', justifyContent: 'space-between', overflow: 'hidden' },
+  planImage: { opacity: 1 },
+  planImageShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(13,8,18,0.2)' },
+  planImageTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 8 },
+  planImageBottom: { paddingHorizontal: 10, paddingBottom: 11, paddingTop: 30, backgroundColor: 'rgba(12,8,16,0.42)' },
+  planImageTitle: { color: '#FFFFFF', fontSize: 14, lineHeight: 18, fontWeight: '800', letterSpacing: -0.2, textShadowColor: 'rgba(0,0,0,0.35)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 1 } },
+  planImageTime: { color: 'rgba(255,255,255,0.88)', fontSize: 10, marginTop: 4 },
+  planCategory: { backgroundColor: 'rgba(22,14,28,0.72)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.24)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.full },
+  planCategoryText: { color: '#FFFFFF', fontSize: 9, fontWeight: '700', textTransform: 'capitalize' },
+  planCount: { flexDirection: 'row', gap: 4, alignItems: 'center', backgroundColor: 'rgba(14,10,23,0.76)', paddingHorizontal: 7, paddingVertical: 5, borderRadius: Radius.full },
+  planCountText: { color: Colors.dark.text, fontSize: 9, fontWeight: '700' },
+  planDetails: { minHeight: 54, paddingHorizontal: 9, paddingVertical: 9, flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: 'rgba(255,255,255,0.025)' },
+  planHostAvatar: { width: 27, height: 27, borderRadius: 14, backgroundColor: '#33263C', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  planHostImage: { width: 27, height: 27, borderRadius: 14 },
+  planHostInitial: { color: Colors.dark.text, fontSize: 11, fontWeight: '800' },
+  planHostName: { color: Colors.dark.text, fontSize: 10, fontWeight: '700', marginBottom: 2 },
   planMeta: { color: Colors.dark.textMuted, fontSize: 9 },
   planEmpty: { marginHorizontal: Spacing.lg, minHeight: 120, alignItems: 'center', justifyContent: 'center', padding: Spacing.lg, borderRadius: Radius.lg, backgroundColor: Colors.dark.surface, borderWidth: 1, borderColor: Colors.dark.border, gap: 6 },
   hostInlineButton: { backgroundColor: Colors.dark.primary, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, borderRadius: Radius.full, marginTop: Spacing.sm },
