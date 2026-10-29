@@ -137,21 +137,6 @@ export default function MapHome() {
             </TouchableOpacity>
           </View>
         </View>
-        <View style={styles.welcomeRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.greeting}>GOOD TO SEE YOU, {(user.display_name?.trim() || 'FRIEND').split(/\s+/)[0].toUpperCase()}</Text>
-            <Text style={styles.headline}>Find your people.</Text>
-          </View>
-          <View style={styles.livePill}><View style={styles.liveDot} /><Text style={styles.liveLabel}>{gatherings.length} PLANS</Text></View>
-        </View>
-        <TouchableOpacity accessibilityRole="button" style={styles.irlCta} onPress={() => setIrlSheet(true)}>
-          <View style={styles.irlCtaIcon}><Ionicons name="sparkles" size={20} color={Colors.dark.background} /></View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.irlCtaTitle}>I’m bored</Text>
-            <Text style={styles.irlCtaCopy}>Find a real plan for the next 24 hours</Text>
-          </View>
-          <Ionicons name="arrow-forward" size={18} color={Colors.dark.primary} />
-        </TouchableOpacity>
       </View>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.exploreContent}>
         <View style={styles.exploreIntro}>
@@ -180,6 +165,14 @@ export default function MapHome() {
             <Ionicons name="arrow-forward" size={17} color={Colors.dark.primary} style={styles.actionArrow} />
           </TouchableOpacity>
         </View>
+        {loadError && !isLoading && (
+          <View style={styles.planEmpty}>
+            <Ionicons name="cloud-offline-outline" size={24} color={Colors.dark.textMuted} />
+            <Text style={styles.discoveryActionTitle}>Couldn't refresh plans</Text>
+            <Text style={styles.discoveryActionCopy}>Check your connection and try again.</Text>
+            <TouchableOpacity style={styles.hostInlineButton} onPress={load}><Text style={styles.hostInlineButtonText}>Try again</Text></TouchableOpacity>
+          </View>
+        )}
         <View style={styles.sectionHeading}>
           <Text style={styles.sectionTitle}>Popular plans</Text>
           <TouchableOpacity onPress={() => { setCat(null); setTimeFilter('upcoming'); }}><Text style={styles.seeAll}>See all →</Text></TouchableOpacity>
@@ -193,7 +186,7 @@ export default function MapHome() {
                 <View style={styles.planImagePlaceholder}>
                   <Ionicons name={categoryIcon(g.category) as any} size={32} color={Colors.dark.primary} />
                   <View style={styles.planCategory}><Text style={styles.planCategoryText}>{g.category}</Text></View>
-                  <View style={styles.planCount}><Ionicons name="people" size={12} color={Colors.dark.text} /><Text style={styles.planCountText}>{g.spots_left ?? g.max_guests} spots</Text></View>
+                  <View style={styles.planCount}><Ionicons name="people" size={12} color={Colors.dark.text} /><Text style={styles.planCountText}>{g.spots_left != null ? `${g.spots_left} spots left` : 'Open plan'}</Text></View>
                 </View>
                 <View style={styles.planDetails}>
                   <Text numberOfLines={1} style={styles.planTitle}>{g.title}</Text>
