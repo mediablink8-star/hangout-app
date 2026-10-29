@@ -134,9 +134,9 @@ export default function Feed() {
       {posts.map((p) => (
         <View key={p.id} onLayout={event => { if (postId && p.id === postId) scrollRef.current?.scrollTo({ y: Math.max(0, event.nativeEvent.layout.y - 10), animated: true }); }} style={[styles.card, p.id === postId && styles.postHighlight]}>
           <View style={styles.authorRow}>
-            {p.author.avatar_url ? <Image source={{ uri: p.author.avatar_url }} style={styles.avatar} /> : <View style={styles.avatar} />}
+            {p.author.avatar_url ? <Image source={{ uri: p.author.avatar_url }} style={styles.avatar} /> : <View style={[styles.avatar, styles.avatarFallback]}><Text style={styles.avatarInitial}>{p.author.display_name?.trim()?.charAt(0)?.toUpperCase() || '?'}</Text></View>}
             <View style={{ marginLeft: Spacing.sm, flex: 1 }}>
-              <Text style={[Typography.body, { color: Colors.dark.text, fontWeight: '600' }]}>{p.author.display_name}</Text>
+              <Text style={[Typography.body, { color: Colors.dark.text, fontWeight: '800', letterSpacing: -0.15 }]}>{p.author.display_name}</Text>
               <Text style={[Typography.caption, { color: Colors.dark.textMuted }]}>{new Date(p.created_at).toLocaleString()}</Text>
             </View>
             {p.user_id === user.id && (
@@ -210,18 +210,20 @@ const styles = StyleSheet.create({
   retryText: { color: Colors.dark.background, fontWeight: '700', fontSize: 13 },
   emptyCard: { alignItems: 'center', backgroundColor: Colors.dark.glass, padding: Spacing.xl, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.dark.border, marginTop: Spacing.sm },
   emptyMark: { color: Colors.dark.primary, fontSize: 28, marginBottom: Spacing.sm },
-  composer: { backgroundColor: Colors.dark.surface, padding: Spacing.md, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.dark.borderStrong, marginBottom: Spacing.lg },
-  input: { backgroundColor: Colors.dark.glass, color: Colors.dark.text, padding: Spacing.md, borderRadius: Radius.md, minHeight: 60, textAlignVertical: 'top', borderWidth: 1, borderColor: Colors.dark.border },
+  composer: { backgroundColor: Colors.dark.surface, padding: 16, borderRadius: 24, borderWidth: 1, borderColor: Colors.dark.borderStrong, marginBottom: Spacing.lg, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 3 },
+  input: { backgroundColor: Colors.dark.background, color: Colors.dark.text, padding: 14, borderRadius: Radius.lg, minHeight: 76, textAlignVertical: 'top', borderWidth: 1, borderColor: Colors.dark.borderStrong, fontSize: 14, lineHeight: 21 },
   preview: { marginTop: Spacing.sm },
   previewImg: { width: '100%', height: 160, borderRadius: Radius.md },
   mediaBtn: { backgroundColor: Colors.dark.glass, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.dark.border },
   mediaBtnText: { color: Colors.dark.text, fontSize: 13, fontWeight: '600' },
   postBtn: { backgroundColor: Colors.dark.primary, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, borderRadius: Radius.md, marginLeft: 'auto' },
   postBtnText: { color: Colors.dark.background, fontWeight: '700' },
-  card: { backgroundColor: Colors.dark.surface, padding: Spacing.md, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.dark.border, marginBottom: Spacing.md },
+  card: { backgroundColor: Colors.dark.surface, padding: 16, borderRadius: 24, borderWidth: 1, borderColor: Colors.dark.borderStrong, marginBottom: Spacing.md, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 14, shadowOffset: { width: 0, height: 7 }, elevation: 2 },
   postHighlight: { borderColor: Colors.dark.primary, borderWidth: 2 },
   authorRow: { flexDirection: 'row', alignItems: 'center' },
-  avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.dark.glass, borderWidth: 1, borderColor: Colors.dark.border },
+  avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: Colors.dark.glass, borderWidth: 1, borderColor: Colors.dark.borderStrong },
+  avatarFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#263629' },
+  avatarInitial: { color: Colors.dark.primary, fontSize: 16, fontWeight: '900' },
   media: { width: '100%', height: 240, borderRadius: Radius.md, marginTop: Spacing.sm, backgroundColor: Colors.dark.glass },
   actions: { marginTop: Spacing.sm, flexDirection: 'row' },
 });

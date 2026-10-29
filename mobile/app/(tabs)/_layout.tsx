@@ -6,6 +6,8 @@ import { BlurView } from 'expo-blur';
 import { api } from '../../lib/api';
 import { useEffect, useState } from 'react';
 
+const styles = StyleSheet.create({ iconWrap: { width: 40, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 14 }, iconWrapActive: { backgroundColor: 'rgba(201,243,106,0.12)' } });
+
 export default function TabLayout() {
   const c = Colors.dark;
   const [unread, setUnread] = useState(0);
@@ -31,10 +33,13 @@ export default function TabLayout() {
           bottom: Platform.OS === 'ios' ? 22 : 12,
           left: 20,
           right: 20,
-          height: 74,
+          height: 76,
           borderRadius: Radius.xl,
           backgroundColor: 'transparent',
           borderTopWidth: 0,
+          borderWidth: 1,
+          borderColor: 'rgba(220,246,218,0.14)',
+          paddingTop: 3,
           ...Shadows.lg,
         },
         tabBarBackground: () => (
@@ -45,14 +50,14 @@ export default function TabLayout() {
         ),
         tabBarActiveTintColor: c.primary,
         tabBarInactiveTintColor: c.textMuted,
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '600', marginTop: 2, letterSpacing: 0.1 },
-        tabBarItemStyle: { paddingTop: 8, paddingBottom: 6 },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginTop: 2, letterSpacing: 0.15 },
+        tabBarItemStyle: { paddingTop: 6, paddingBottom: 5 },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Explore', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "compass" : "compass-outline"} size={focused ? 22 : 20} color={color as string} /> }} />
-      <Tabs.Screen name="messages" options={{ title: 'Messages', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "chatbubbles" : "chatbubbles-outline"} size={focused ? 22 : 20} color={color as string} />, tabBarBadge: badge }} />
-      <Tabs.Screen name="feed" options={{ title: 'Feed', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "people" : "people-outline"} size={focused ? 22 : 20} color={color as string} /> }} />
-      <Tabs.Screen name="profile" options={{ title: 'Me', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "person-circle" : "person-circle-outline"} size={focused ? 23 : 21} color={color as string} /> }} />
+      <Tabs.Screen name="index" options={{ title: 'Explore', tabBarIcon: ({ color, focused }) => <View style={[styles.iconWrap, focused && styles.iconWrapActive]}><Ionicons name={focused ? "compass" : "compass-outline"} size={focused ? 21 : 20} color={color as string} /></View> }} />
+      <Tabs.Screen name="messages" options={{ title: 'Messages', tabBarIcon: ({ color, focused }) => <View style={[styles.iconWrap, focused && styles.iconWrapActive]}><Ionicons name={focused ? "chatbubbles" : "chatbubbles-outline"} size={focused ? 21 : 20} color={color as string} /></View>, tabBarBadge: badge }} />
+      <Tabs.Screen name="feed" options={{ title: 'Feed', tabBarIcon: ({ color, focused }) => <View style={[styles.iconWrap, focused && styles.iconWrapActive]}><Ionicons name={focused ? "people" : "people-outline"} size={focused ? 21 : 20} color={color as string} /></View> }} />
+      <Tabs.Screen name="profile" options={{ title: 'Me', tabBarIcon: ({ color, focused }) => <View style={[styles.iconWrap, focused && styles.iconWrapActive]}><Ionicons name={focused ? "person-circle" : "person-circle-outline"} size={focused ? 22 : 20} color={color as string} /></View> }} />
     </Tabs>
   );
 }
