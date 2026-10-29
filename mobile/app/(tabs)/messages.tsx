@@ -70,33 +70,22 @@ export default function MessagesInbox() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <LiquidGlassBackground />
       <View style={styles.topBrandRow}>
-        <View style={styles.brandLockup}>
-          <View style={styles.brandMark}><Text style={styles.brandMarkText}>H</Text></View>
-          <View><Text style={styles.brandName}>Hangout</Text><Text style={styles.brandCaption}>YOUR CITY, TOGETHER</Text></View>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Your profile" style={styles.profileBubble} onPress={() => router.push('/(tabs)/profile')}>
+          <Ionicons name="person" size={17} color={Colors.dark.text} />
+        </TouchableOpacity>
+        <View style={styles.inboxSearch}>
+          <Ionicons name="search" size={16} color={Colors.dark.textMuted} />
+          <TextInput style={styles.inboxSearchInput} placeholder="Search" placeholderTextColor={Colors.dark.textMuted} value={q} onChangeText={(value) => { setQ(value); if (!searching) setSearching(true); }} onSubmitEditing={load} returnKeyType="search" />
+          {!!q && <TouchableOpacity onPress={() => { setQ(''); load(); }}><Ionicons name="close-circle" size={16} color={Colors.dark.textMuted} /></TouchableOpacity>}
         </View>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Search messages" style={styles.iconBtn} onPress={() => setSearching((s) => !s)}>
-            <Ionicons name="search" size={19} color={Colors.dark.text} />
-          </TouchableOpacity>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="New message" style={styles.iconBtn} onPress={() => router.push('/friends')}>
-            <Ionicons name="create-outline" size={19} color={Colors.dark.text} />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="New message" style={styles.iconBtn} onPress={() => router.push('/friends')}>
+          <Ionicons name="notifications-outline" size={18} color={Colors.dark.text} />
+        </TouchableOpacity>
       </View>
       <View style={styles.titleBlock}>
         <Text style={styles.pageTitle}>Messages</Text>
-        <Text style={styles.pageSubtitle}>Pick up where your plans left off.</Text>
         {totalUnread > 0 && <Text style={styles.unreadSummary}>{totalUnread} unread {totalUnread === 1 ? 'message' : 'messages'}</Text>}
       </View>
-
-      {searching && (
-        <View style={styles.searchBar}>
-          <TextInput style={styles.searchInput} placeholder="Search conversations..." placeholderTextColor={Colors.dark.textMuted} value={q} onChangeText={setQ} autoFocus onSubmitEditing={load} returnKeyType="search" />
-          <TouchableOpacity onPress={() => { setSearching(false); setQ(''); load(); }}>
-            <Text style={{ color: Colors.dark.primary, marginLeft: Spacing.sm }}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      )}
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, alignItems: 'center', gap: Spacing.sm }}>
         {(['all', 'unread', 'gatherings', 'direct'] as const).map((f) => (
@@ -206,14 +195,17 @@ function timeAgo(iso: string) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, paddingBottom: Spacing.md },
-  topBrandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs, paddingBottom: Spacing.md },
+  topBrandRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs, paddingBottom: Spacing.sm },
+  profileBubble: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(231,138,215,0.22)', borderWidth: 1, borderColor: 'rgba(231,138,215,0.55)', alignItems: 'center', justifyContent: 'center' },
+  inboxSearch: { flex: 1, height: 38, borderRadius: Radius.full, backgroundColor: 'rgba(255,255,255,0.075)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 8 },
+  inboxSearchInput: { flex: 1, color: Colors.dark.text, fontSize: 12, paddingVertical: 0 },
   brandLockup: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   brandMark: { width: 36, height: 36, borderRadius: 12, backgroundColor: Colors.dark.primary, alignItems: 'center', justifyContent: 'center' },
   brandMarkText: { color: Colors.dark.background, fontSize: 20, fontWeight: '900' },
   brandName: { color: Colors.dark.text, fontSize: 18, fontWeight: '800', letterSpacing: -0.5 },
   brandCaption: { color: Colors.dark.textMuted, fontSize: 8, letterSpacing: 0.8, marginTop: 1 },
-  titleBlock: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm },
-  pageTitle: { color: Colors.dark.text, fontSize: 29, fontWeight: '900', letterSpacing: -0.8 },
+  titleBlock: { paddingHorizontal: Spacing.lg, paddingBottom: 2, paddingTop: 2 },
+  pageTitle: { color: Colors.dark.text, fontSize: 23, fontWeight: '800', letterSpacing: -0.6 },
   pageSubtitle: { color: Colors.dark.textMuted, fontSize: 12, marginTop: 3 },
   unreadSummary: { color: Colors.dark.primary, fontSize: 11, fontWeight: '700', marginTop: 7 },
   iconBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: Colors.dark.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.dark.borderStrong },
@@ -223,7 +215,7 @@ const styles = StyleSheet.create({
   chipOn: { backgroundColor: Colors.dark.primary, borderColor: Colors.dark.primary },
   chipText: { color: Colors.dark.textMuted, fontSize: 13, fontWeight: '600' },
   chipTextOn: { color: Colors.dark.background },
-  row: { flexDirection: 'row', alignItems: 'center', marginHorizontal: Spacing.lg, marginBottom: 9, paddingHorizontal: Spacing.md, paddingVertical: 14, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.dark.borderStrong, backgroundColor: Colors.dark.glass },
+  row: { flexDirection: 'row', alignItems: 'center', marginHorizontal: Spacing.lg, marginBottom: 7, paddingHorizontal: 10, paddingVertical: 10, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.075)', backgroundColor: 'rgba(255,255,255,0.055)' },
   avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#24263A', borderWidth: 1, borderColor: Colors.dark.borderStrong, alignItems: 'center', justifyContent: 'center' },
   avatarUnread: { borderColor: Colors.dark.primary, borderWidth: 2 },
   unreadBadge: { backgroundColor: Colors.dark.primary, minWidth: 23, height: 23, borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 7, shadowColor: Colors.dark.primary, shadowOpacity: 0.18, shadowRadius: 8, elevation: 2 },
