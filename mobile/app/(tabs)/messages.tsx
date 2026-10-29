@@ -184,6 +184,7 @@ function timeAgo(iso: string) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, paddingBottom: Spacing.md },
+  topBrandRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs, paddingBottom: Spacing.sm },
   inboxHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.sm, gap: Spacing.md },
   inboxHeading: { flex: 1, minWidth: 0 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
