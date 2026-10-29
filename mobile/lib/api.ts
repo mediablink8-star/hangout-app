@@ -80,6 +80,7 @@ export const api = {
   markAllNotificationsRead: () => request('/notifications/read-all', { method: 'POST' }),
   notificationPrefs: () => request('/me/notification-prefs'),
   updateNotificationPrefs: (b: any) => request('/me/notification-prefs', { method: 'PATCH', body: JSON.stringify(b) }),
+  following: () => request('/me/following'),
   followHost: (id: string) => request('/hosts/' + id + '/follow', { method: 'POST' }),
   unfollowHost: (id: string) => request('/hosts/' + id + '/follow', { method: 'DELETE' }),
   conversations: (q?: string) => request('/conversations' + (q ? '?q=' + encodeURIComponent(q) : '')),
