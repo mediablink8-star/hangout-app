@@ -29,7 +29,7 @@ export default function HangoutMap({ gatherings, onSelect }: Props) {
         console.warn('geo err', err);
         setGeoStatus('Location unavailable: ' + (err?.message || err?.code));
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
     );
   };
 
@@ -93,7 +93,7 @@ if (userCoords) {
   return (
     <View style={styles.container}>
       {/* @ts-ignore */}
-      <iframe srcDoc={html} style={styles.iframe} title="map" />
+      <iframe key={userCoords ? `${userCoords.lat}-${userCoords.lng}` : 'no-location'} srcDoc={html} style={styles.iframe} title="map" />
       <View style={styles.statusBar}>
         <Text style={styles.statusText}>{geoStatus}</Text>
         <TouchableOpacity onPress={requestLocation} style={styles.retryBtn}>
