@@ -10,9 +10,20 @@ interface Props {
   onSelect: (id: string) => void;
 }
 
-const CAT_EMOJI: Record<string, string> = {
-  coffee: '☕', study: '📚', sports: '⚽', outdoors: '🌲', bar: '🍻', party: '🎉', other: '📍',
-};
+const MAP_STYLE = [
+  { elementType: 'geometry', stylers: [{ color: '#171321' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#C5B9D7' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#0C0A12' }] },
+  { featureType: 'administrative', elementType: 'geometry.stroke', stylers: [{ color: '#352A43' }] },
+  { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#211A2C' }] },
+  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#A99BB9' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#30253A' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#211A2B' }] },
+  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#B2AABD' }] },
+  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#241D30' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0D111B' }] },
+  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#9589AC' }] },
+];
 
 export default function HangoutMap({ gatherings, onSelect }: Props) {
   const mapRef = useRef<MapView>(null);
@@ -39,7 +50,9 @@ export default function HangoutMap({ gatherings, onSelect }: Props) {
       <MapView
         ref={mapRef}
         style={styles.map}
-        initialRegion={{ latitude: 40.7128, longitude: -74.006, latitudeDelta: 0.05, longitudeDelta: 0.05 }}
+        initialRegion={{ latitude: 37.9838, longitude: 23.7275, latitudeDelta: 0.12, longitudeDelta: 0.12 }}
+        customMapStyle={MAP_STYLE}
+        userInterfaceStyle="dark"
         showsPointsOfInterests={false}
         showsBuildings={false}
         showsTraffic={false}
@@ -53,25 +66,25 @@ export default function HangoutMap({ gatherings, onSelect }: Props) {
                 center={{ latitude: g.lat, longitude: g.lng }}
                 radius={300}
                 strokeColor={Colors.dark.primary}
-                fillColor="rgba(198,255,61,0.12)"
+                fillColor="rgba(231,138,215,0.12)"
                 strokeWidth={1.5}
+                onPress={() => onSelect(g.id)}
               />
             )}
-            <Marker
+            {g.exact && <Marker
               coordinate={{ latitude: g.lat, longitude: g.lng }}
-              onPress={() => onSelect(g.id)}
               tracksViewChanges={false}
             >
               <View style={styles.marker}>
-                <Text style={styles.markerEmoji}>{CAT_EMOJI[g.category] || '📍'}</Text>
+                <Text style={styles.markerEmoji}>✦</Text>
               </View>
-              <Callout tooltip>
+              <Callout tooltip onPress={() => onSelect(g.id)}>
                 <View style={styles.callout}>
                   <Text style={styles.calloutTitle}>{g.title}</Text>
                   <Text style={styles.calloutCat}>{g.category}</Text>
                 </View>
               </Callout>
-            </Marker>
+            </Marker>}
           </React.Fragment>
         ))}
       </MapView>
@@ -85,17 +98,17 @@ export default function HangoutMap({ gatherings, onSelect }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
-  locateBtn: { position: 'absolute', bottom: 90, left: Spacing.lg, backgroundColor: Colors.dark.primary, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.full, elevation: 4 },
-  locateText: { color: Colors.dark.background, fontWeight: '700', fontSize: 13 },
+  locateBtn: { position: 'absolute', bottom: 90, left: Spacing.lg, backgroundColor: 'rgba(23,19,33,0.94)', paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.full, borderWidth: 1, borderColor: 'rgba(231,138,215,0.3)', elevation: 4 },
+  locateText: { color: Colors.dark.text, fontWeight: '700', fontSize: 13 },
   marker: {
-    width: 34, height: 34, borderRadius: 17,
-    backgroundColor: Colors.dark.primary,
+    width: 34, height: 34, borderRadius: 13,
+    backgroundColor: '#E78AD7',
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: '#0B0F14',
+    borderWidth: 2, borderColor: '#F7F1FA',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 3, elevation: 4,
   },
-  markerEmoji: { fontSize: 16 },
-  callout: { backgroundColor: Colors.dark.surface, padding: 8, borderRadius: 8, borderWidth: 1, borderColor: Colors.dark.border, minWidth: 120 },
+  markerEmoji: { fontSize: 17, color: '#241421', fontWeight: '900' },
+  callout: { backgroundColor: Colors.dark.surface, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(231,138,215,0.25)', minWidth: 140 },
   calloutTitle: { color: Colors.dark.text, fontWeight: '700', fontSize: 13 },
   calloutCat: { color: Colors.dark.textMuted, fontSize: 11, marginTop: 2 },
 });
