@@ -5,6 +5,7 @@ import { Colors, Spacing, Radius, Typography, Shadows } from '../../constants/th
 import { api } from '../../lib/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import LiquidGlassBackground from '../../components/LiquidGlassBackground';
 
 type Conv = any;
 
@@ -47,6 +48,7 @@ export default function MessagesInbox() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
+        <LiquidGlassBackground />
         <View style={styles.topBrandRow}>
           <View style={styles.brandLockup}>
             <View style={styles.brandMark}><Text style={styles.brandMarkText}>H</Text></View>
@@ -66,6 +68,7 @@ export default function MessagesInbox() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <LiquidGlassBackground />
       <View style={styles.topBrandRow}>
         <View style={styles.brandLockup}>
           <View style={styles.brandMark}><Text style={styles.brandMarkText}>H</Text></View>
@@ -216,11 +219,11 @@ const styles = StyleSheet.create({
   iconBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: Colors.dark.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.dark.borderStrong },
   searchBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm },
   searchInput: { flex: 1, backgroundColor: Colors.dark.surface, color: Colors.dark.text, paddingHorizontal: Spacing.md, paddingVertical: 13, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.dark.borderStrong, fontSize: 14 },
-  chip: { paddingHorizontal: 17, paddingVertical: 10, borderRadius: Radius.full, backgroundColor: Colors.dark.surface, borderWidth: 1, borderColor: Colors.dark.borderStrong },
+  chip: { paddingHorizontal: 17, paddingVertical: 10, borderRadius: Radius.full, backgroundColor: Colors.dark.glass, borderWidth: 1, borderColor: Colors.dark.borderStrong },
   chipOn: { backgroundColor: Colors.dark.primary, borderColor: Colors.dark.primary },
   chipText: { color: Colors.dark.textMuted, fontSize: 13, fontWeight: '600' },
   chipTextOn: { color: Colors.dark.background },
-  row: { flexDirection: 'row', alignItems: 'center', marginHorizontal: Spacing.lg, marginBottom: 9, paddingHorizontal: Spacing.md, paddingVertical: 14, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.dark.borderStrong, backgroundColor: Colors.dark.surface },
+  row: { flexDirection: 'row', alignItems: 'center', marginHorizontal: Spacing.lg, marginBottom: 9, paddingHorizontal: Spacing.md, paddingVertical: 14, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.dark.borderStrong, backgroundColor: Colors.dark.glass },
   avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#24263A', borderWidth: 1, borderColor: Colors.dark.borderStrong, alignItems: 'center', justifyContent: 'center' },
   avatarUnread: { borderColor: Colors.dark.primary, borderWidth: 2 },
   unreadBadge: { backgroundColor: Colors.dark.primary, minWidth: 23, height: 23, borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 7, shadowColor: Colors.dark.primary, shadowOpacity: 0.18, shadowRadius: 8, elevation: 2 },

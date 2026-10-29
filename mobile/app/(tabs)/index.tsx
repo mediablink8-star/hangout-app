@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Alert, ImageBackground } from 'react-native';
+import { Animated, View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Alert, ImageBackground } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius, Typography } from '../../constants/theme';
@@ -8,6 +8,7 @@ import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import HangoutMap from '../../components/HangoutMap';
+import LiquidGlassBackground from '../../components/LiquidGlassBackground';
 import * as Location from 'expo-location';
 import { distanceInKm, IRL_MOODS, IrlMood, parseMissionDescription } from '../../lib/irlMode';
 
@@ -47,6 +48,7 @@ export default function MapHome() {
   const [irlSearch, setIrlSearch] = useState<{ mood: IrlMood; radiusKm: number; latitude: number; longitude: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const requestId = useRef(0);
+  const introProgress = useRef(new Animated.Value(0)).current;
 
   const load = async () => {
     const currentRequest = ++requestId.current;
@@ -91,6 +93,9 @@ export default function MapHome() {
     }
   };
   useEffect(() => { load(); }, [cat, timeFilter, irlSearch]);
+  useEffect(() => {
+    Animated.spring(introProgress, { toValue: 1, damping: 18, stiffness: 105, mass: 0.85, useNativeDriver: true }).start();
+  }, [introProgress]);
 
   const findNearbyPlans = async () => {
     setLocating(true);
@@ -128,6 +133,7 @@ export default function MapHome() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <LiquidGlassBackground />
       <View style={styles.header}>
         <View style={styles.brandRow}>
           <View style={styles.brandLockup}>
@@ -151,11 +157,11 @@ export default function MapHome() {
         </View>
       </View>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.exploreContent}>
-        <View style={styles.exploreIntro}>
+        <Animated.View style={[styles.exploreIntro, { opacity: introProgress, transform: [{ translateY: introProgress.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) }] }]}>
           <Text style={styles.exploreEyebrow}>YOUR NEXT STORY STARTS HERE</Text>
           <Text style={styles.exploreHeadline}>Find your <Text style={{ color: Colors.dark.primary }}>people.</Text></Text>
           <Text style={styles.exploreSubhead}>Real people. Real plans. Real moments.</Text>
-        </View>
+        </Animated.View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRail}>
           {([{ id: 'all', label: 'All' }, ...CATS.map((value) => ({ id: value, label: value.charAt(0).toUpperCase() + value.slice(1) }))]).map((item) => (
             <TouchableOpacity key={item.id} accessibilityRole="button" accessibilityState={{ selected: item.id === 'all' ? !cat : cat === item.id }} style={[styles.chip, (item.id === 'all' ? !cat : cat === item.id) && styles.chipOn]} onPress={() => { setIrlSearch(null); setCat(item.id === 'all' ? null : item.id as Category); }}>
@@ -303,7 +309,7 @@ const styles = StyleSheet.create({
   exploreSubhead: { color: Colors.dark.textMuted, fontSize: 13, marginTop: 5 },
   categoryRail: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md, gap: 7 },
   discoveryActions: { flexDirection: 'row', gap: Spacing.sm, paddingHorizontal: Spacing.lg, marginTop: Spacing.xs },
-  discoveryActionCard: { flex: 1, minHeight: 138, padding: 15, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.dark.borderStrong, backgroundColor: Colors.dark.surface, overflow: 'hidden' },
+  discoveryActionCard: { flex: 1, minHeight: 138, padding: 15, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.dark.borderStrong, backgroundColor: Colors.dark.glass, overflow: 'hidden' },
   discoveryActionIcon: { width: 28, height: 28, borderRadius: 9, backgroundColor: Colors.dark.primary, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.sm },
   discoveryActionTitle: { color: Colors.dark.text, fontSize: 13, fontWeight: '800', lineHeight: 18 },
   discoveryActionCopy: { color: Colors.dark.textMuted, fontSize: 11, lineHeight: 16, marginTop: 3 },
@@ -315,11 +321,11 @@ const styles = StyleSheet.create({
   planCard: { width: 218, borderRadius: Radius.xl, overflow: 'hidden', borderWidth: 1, borderColor: Colors.dark.borderStrong, backgroundColor: Colors.dark.surface },
   planImagePlaceholder: { height: 140, backgroundColor: '#24263A', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   planImage: { opacity: 0.94 },
-  planImageShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(3,8,4,0.24)' },
-  planImageIcon: { width: 54, height: 54, borderRadius: 18, backgroundColor: 'rgba(5,10,6,0.58)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.24)', alignItems: 'center', justifyContent: 'center' },
+  planImageShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(11,8,18,0.28)' },
+  planImageIcon: { width: 54, height: 54, borderRadius: 18, backgroundColor: 'rgba(14,10,23,0.56)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.24)', alignItems: 'center', justifyContent: 'center' },
   planCategory: { position: 'absolute', left: 10, bottom: 9, backgroundColor: Colors.dark.primary, paddingHorizontal: 9, paddingVertical: 4, borderRadius: Radius.full },
   planCategoryText: { color: Colors.dark.background, fontSize: 10, fontWeight: '800', textTransform: 'capitalize' },
-  planCount: { position: 'absolute', right: 8, top: 8, flexDirection: 'row', gap: 4, alignItems: 'center', backgroundColor: 'rgba(5,8,5,0.72)', paddingHorizontal: 7, paddingVertical: 5, borderRadius: Radius.full },
+  planCount: { position: 'absolute', right: 8, top: 8, flexDirection: 'row', gap: 4, alignItems: 'center', backgroundColor: 'rgba(14,10,23,0.76)', paddingHorizontal: 7, paddingVertical: 5, borderRadius: Radius.full },
   planCountText: { color: Colors.dark.text, fontSize: 10, fontWeight: '700' },
   planDetails: { padding: 14, gap: 8 },
   planTitle: { color: Colors.dark.text, fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
@@ -334,7 +340,7 @@ const styles = StyleSheet.create({
   mapModalHeader: { flexDirection: 'row', alignItems: 'center', padding: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.dark.border },
   mapError: { position: 'absolute', bottom: 20, left: Spacing.lg, right: Spacing.lg, backgroundColor: Colors.dark.surface, borderRadius: Radius.lg, padding: Spacing.md, alignItems: 'center', gap: Spacing.sm },
 
-  header: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs, paddingBottom: Spacing.md, zIndex: 10, backgroundColor: Colors.dark.background },
+  header: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs, paddingBottom: Spacing.md, zIndex: 10, backgroundColor: 'transparent' },
   brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   brandLockup: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   brandMark: { width: 36, height: 36, borderRadius: 12, backgroundColor: Colors.dark.primary, alignItems: 'center', justifyContent: 'center' },
@@ -351,7 +357,7 @@ const styles = StyleSheet.create({
   livePill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.dark.border, backgroundColor: Colors.dark.surface2, paddingHorizontal: 10, paddingVertical: 7, marginBottom: 2 },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.dark.primary },
   liveLabel: { color: Colors.dark.textMuted, fontSize: 9, fontWeight: '800', letterSpacing: 0.7 },
-  irlCta: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.md, marginTop: Spacing.md, borderRadius: Radius.lg, borderWidth: 1, borderColor: 'rgba(201,243,106,0.24)', backgroundColor: Colors.dark.surface2 },
+  irlCta: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.md, marginTop: Spacing.md, borderRadius: Radius.lg, borderWidth: 1, borderColor: 'rgba(196,181,253,0.28)', backgroundColor: Colors.dark.surface2 },
   irlCtaIcon: { width: 36, height: 36, borderRadius: 12, backgroundColor: Colors.dark.primary, alignItems: 'center', justifyContent: 'center' },
   irlCtaTitle: { color: Colors.dark.text, fontSize: 14, fontWeight: '800' },
   irlCtaCopy: { color: Colors.dark.textMuted, fontSize: 11, marginTop: 2 },
@@ -386,7 +392,7 @@ const styles = StyleSheet.create({
   sheetSubtitle: { color: Colors.dark.textMuted, fontSize: 13, marginTop: Spacing.xs, marginBottom: Spacing.md },
   moodGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   moodCard: { width: '47%', minHeight: 92, padding: Spacing.md, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.dark.border, backgroundColor: Colors.dark.background },
-  moodCardOn: { borderColor: Colors.dark.primary, backgroundColor: 'rgba(201,243,106,0.06)' },
+  moodCardOn: { borderColor: Colors.dark.primary, backgroundColor: 'rgba(196,181,253,0.08)' },
   moodTitle: { color: Colors.dark.text, fontWeight: '800', fontSize: 13, marginTop: Spacing.xs },
   moodTitleOn: { color: Colors.dark.primary },
   moodHint: { color: Colors.dark.textMuted, fontSize: 10, lineHeight: 14, marginTop: 2 },
