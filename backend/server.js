@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const { openDb, uid, hashPw, verifyPw, tokenFor, verifyToken, fuzzCoord, isApprovedMember, publicGathering } = require('./db');
 const memoryStorage = require('./memoryStorage');
 const sharp = require('sharp');
@@ -1067,5 +1067,19 @@ app.get('/gatherings/:id/conversation', auth, (req, res) => {
   if (!conv) return res.status(404).json({ error: 'not found' });
   res.json(conv);
 });
-if (require.main === module) app.listen(PORT, () => console.log('Hangout API on :' + PORT));
+if (require.main === module) {
+  if (process.env.DEMO_DATA === 'true') {
+    const seeded = spawnSync(process.execPath, [require('path').join(__dirname, 'demoData.js'), 'seed'], {
+      env: process.env,
+      encoding: 'utf8',
+      timeout: 30000,
+    });
+    if (seeded.stdout) console.log(seeded.stdout.trim());
+    if (seeded.stderr) console.error(seeded.stderr.trim());
+    if (seeded.error || seeded.status !== 0) {
+      console.error('DEMO_DATA seeding failed; API will still start without demo records.', seeded.error || seeded.status);
+    }
+  }
+  app.listen(PORT, () => console.log('Hangout API on :' + PORT));
+}
 module.exports = { app, db };
