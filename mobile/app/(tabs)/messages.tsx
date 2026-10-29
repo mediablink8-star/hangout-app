@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
   chipText: { color: Colors.dark.textMuted, fontSize: 13, fontWeight: '600' },
   chipTextOn: { color: Colors.dark.background },
   row: { flexDirection: 'row', alignItems: 'center', marginHorizontal: Spacing.lg, marginBottom: 9, paddingHorizontal: Spacing.md, paddingVertical: 14, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.dark.borderStrong, backgroundColor: Colors.dark.surface },
-  avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#263629', borderWidth: 1, borderColor: Colors.dark.borderStrong, alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#24263A', borderWidth: 1, borderColor: Colors.dark.borderStrong, alignItems: 'center', justifyContent: 'center' },
   avatarUnread: { borderColor: Colors.dark.primary, borderWidth: 2 },
   unreadBadge: { backgroundColor: Colors.dark.primary, minWidth: 23, height: 23, borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 7, shadowColor: Colors.dark.primary, shadowOpacity: 0.18, shadowRadius: 8, elevation: 2 },
   unreadText: { color: Colors.dark.background, fontSize: 11, fontWeight: '700' },
