@@ -48,7 +48,7 @@ export default function HangoutMap({ gatherings, onSelect }: Props) {
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
   const pins = __PINS__;
-  const map = L.map('map', { zoomControl: false }).setView([40.7128,-74.006],12);
+  const map = L.map('map', { zoomControl: false }).setView([37.9838,23.7275],12);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
     }).addTo(map);
