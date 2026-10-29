@@ -79,6 +79,14 @@ function openDb() {
       media_type TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+    CREATE TABLE IF NOT EXISTS post_comments (
+      id TEXT PRIMARY KEY,
+      post_id TEXT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+      body TEXT NOT NULL CHECK(length(body) BETWEEN 1 AND 1000),
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS post_comments_post_created ON post_comments(post_id, created_at);
     CREATE TABLE IF NOT EXISTS post_likes (
       post_id TEXT NOT NULL REFERENCES posts(id),
       user_id TEXT NOT NULL REFERENCES profiles(id),
