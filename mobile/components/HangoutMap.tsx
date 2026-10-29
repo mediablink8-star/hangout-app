@@ -28,19 +28,19 @@ export default function HangoutMap({ gatherings, onSelect }: Props) {
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
-    html,body,#map{height:100%;width:100%;margin:0;background:#080d0a}
-    .leaflet-container{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#080d0a}
-    .leaflet-control-attribution{background:rgba(8,13,10,.8)!important;color:#a9b3a7!important}
-    .leaflet-control-attribution a{color:#c9f36a!important}
-    .leaflet-bar a{background:#111914!important;color:#f3f7f0!important;border-color:rgba(220,246,218,.1)!important}
-    .hangout-pin{width:34px;height:34px;border-radius:13px 13px 13px 4px;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;background:#c9f36a;border:2px solid #f3f7f0;box-shadow:0 5px 20px rgba(0,0,0,.45)}
+    html,body,#map{height:100%;width:100%;margin:0;background:#08090f}
+    .leaflet-container{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#08090f}
+    .leaflet-control-attribution{background:rgba(8,13,10,.8)!important;color:#a0a2b3!important}
+    .leaflet-control-attribution a{color:#9b8cff!important}
+    .leaflet-bar a{background:#11131d!important;color:#f5f5fa!important;border-color:rgba(225,225,255,.1)!important}
+    .hangout-pin{width:34px;height:34px;border-radius:13px 13px 13px 4px;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;background:#9b8cff;border:2px solid #f5f5fa;box-shadow:0 5px 20px rgba(0,0,0,.45)}
     .hangout-pin span{transform:rotate(45deg);font-size:15px}
-    .you-pin{width:16px;height:16px;border:3px solid #fff;border-radius:50%;background:#c9f36a;box-shadow:0 0 0 7px rgba(201,243,106,.2),0 0 20px rgba(201,243,106,.65)}
-    .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#111914;color:#f3f7f0;border:1px solid rgba(220,246,218,.12)}
+    .you-pin{width:16px;height:16px;border:3px solid #fff;border-radius:50%;background:#9b8cff;box-shadow:0 0 0 7px rgba(155,140,255,.2),0 0 20px rgba(155,140,255,.65)}
+    .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#11131d;color:#f5f5fa;border:1px solid rgba(225,225,255,.12)}
     .leaflet-popup-content{margin:14px 16px;line-height:1.45}
     .popup-title{font-weight:800;font-size:15px;margin-bottom:4px}
-    .popup-category{color:#c9f36a;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
-    .popup-go{margin-top:10px;padding:9px 13px;border:0;border-radius:10px;background:#c9f36a;color:#080d0a;font-weight:800}
+    .popup-category{color:#9b8cff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+    .popup-go{margin-top:10px;padding:9px 13px;border:0;border-radius:10px;background:#9b8cff;color:#08090f;font-weight:800}
   </style>
 </head>
 <body>
@@ -60,7 +60,7 @@ export default function HangoutMap({ gatherings, onSelect }: Props) {
     if (!Number.isFinite(pin.lat) || !Number.isFinite(pin.lng)) return;
     const marker = pin.exact
       ? L.marker([pin.lat,pin.lng], { icon })
-      : L.circle([pin.lat,pin.lng], { radius:300, color:'#c9f36a', weight:2, fillColor:'#c9f36a', fillOpacity:.13 });
+      : L.circle([pin.lat,pin.lng], { radius:300, color:'#9b8cff', weight:2, fillColor:'#9b8cff', fillOpacity:.13 });
     marker.addTo(map);
     marker.bindPopup('<div class="popup-category">'+safe(pin.category)+'</div><div class="popup-title">'+safe(pin.title)+'</div><div>'+(pin.exact ? safe(pin.address) : 'Exact location shared after host approval')+'</div><button class="popup-go">View hangout</button>');
     marker.on('popupopen', () => {
