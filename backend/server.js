@@ -680,6 +680,10 @@ app.patch('/me/notification-prefs', auth, (req, res) => {
 });
 
 // ---- host follows ----
+app.get('/me/following', auth, (req, res) => {
+  const following = db.prepare('SELECT p.id, p.display_name, p.avatar_url FROM host_follows hf JOIN profiles p ON p.id = hf.host_id WHERE hf.follower_id = ? ORDER BY p.display_name COLLATE NOCASE').all(req.userId);
+  res.json({ count: following.length, following });
+});
 app.post('/hosts/:id/follow', auth, (req, res) => {
   if (req.params.id === req.userId) return res.status(400).json({ error: 'cannot follow self' });
   try { db.prepare('INSERT INTO host_follows (follower_id,host_id) VALUES (?,?)').run(req.userId, req.params.id); } catch (e) {}
