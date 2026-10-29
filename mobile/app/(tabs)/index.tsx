@@ -137,25 +137,17 @@ export default function MapHome() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <LiquidGlassBackground />
       <View style={styles.header}>
-        <View style={styles.brandRow}>
-          <View style={styles.brandLockup}>
-            <View style={styles.brandMark}><Text style={styles.brandMarkText}>H</Text></View>
-            <View>
-              <Text style={styles.brandName}>hangout</Text>
-              <Text style={styles.brandCaption}>YOUR CITY, TOGETHER</Text>
-            </View>
-          </View>
-          <View style={styles.headerActions}>
-            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Notifications" style={styles.iconBtn} onPress={() => router.push('/notifications')}>
-              <Ionicons name="notifications-outline" size={19} color={Colors.dark.text} />
-            </TouchableOpacity>
-            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Friends" style={styles.iconBtn} onPress={() => router.push('/friends')}>
-              <Ionicons name="people-outline" size={19} color={Colors.dark.text} />
-            </TouchableOpacity>
-            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Your profile" style={styles.profileBtn} onPress={() => router.push('/(tabs)/profile')}>
-              <Text style={styles.profileBtnText}>{(user.display_name?.trim() || 'H').charAt(0).toUpperCase()}</Text>
-            </TouchableOpacity>
-          </View>
+        <View style={styles.referenceTopRow}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Your profile" style={styles.referenceProfile} onPress={() => router.push('/(tabs)/profile')}>
+            <Text style={styles.referenceProfileText}>{(user.display_name?.trim() || 'H').charAt(0).toUpperCase()}</Text>
+          </TouchableOpacity>
+          <View style={{ flex: 1 }} />
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Notifications" style={styles.referenceIconBtn} onPress={() => router.push('/notifications')}>
+            <Ionicons name="notifications-outline" size={18} color={Colors.dark.text} />
+          </TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Friends" style={styles.referenceIconBtn} onPress={() => router.push('/friends')}>
+            <Ionicons name="people-outline" size={18} color={Colors.dark.text} />
+          </TouchableOpacity>
         </View>
       </View>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.exploreContent}>
@@ -380,6 +372,10 @@ const styles = StyleSheet.create({
   mapError: { position: 'absolute', bottom: 20, left: Spacing.lg, right: Spacing.lg, backgroundColor: Colors.dark.surface, borderRadius: Radius.lg, padding: Spacing.md, alignItems: 'center', gap: Spacing.sm },
 
   header: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs, paddingBottom: Spacing.md, zIndex: 10, backgroundColor: 'transparent' },
+  referenceTopRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  referenceProfile: { width: 39, height: 39, borderRadius: 20, backgroundColor: 'rgba(231,138,215,0.2)', borderWidth: 1.5, borderColor: 'rgba(231,138,215,0.7)', alignItems: 'center', justifyContent: 'center' },
+  referenceProfileText: { color: Colors.dark.text, fontSize: 14, fontWeight: '800' },
+  referenceIconBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.075)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
   brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   brandLockup: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   brandMark: { width: 36, height: 36, borderRadius: 12, backgroundColor: Colors.dark.primary, alignItems: 'center', justifyContent: 'center' },
