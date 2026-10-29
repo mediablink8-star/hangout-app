@@ -33,6 +33,7 @@ export default function UserProfile() {
       }}>
         <Text style={[styles.btnText, { color: Colors.dark.text }]}>Message</Text>
       </TouchableOpacity>
+      </View>
       {u.hosted && u.hosted.length > 0 && (
         <>
           <Text style={[Typography.h3, { color: Colors.dark.text, marginTop: Spacing.xl }]}>Hosting</Text>
