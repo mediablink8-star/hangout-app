@@ -84,7 +84,8 @@ export default function Profile() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 120 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 132 }}>
+      <View style={styles.brandRow}><View style={styles.brandLockup}><View style={styles.brandMark}><Text style={styles.brandMarkText}>H</Text></View><View><Text style={styles.brandName}>Hangout</Text><Text style={styles.brandCaption}>YOUR CIRCLE, YOUR WAY</Text></View></View><TouchableOpacity accessibilityRole="button" accessibilityLabel="Open notifications" style={styles.headerAction} onPress={() => router.push('/notifications')}><Text style={styles.headerActionText}>Notifications ↗</Text></TouchableOpacity></View>
       {editing ? (
         <View>
           <TouchableOpacity onPress={pickAvatar} style={{ alignSelf: 'center' }}>
@@ -113,6 +114,7 @@ export default function Profile() {
         </View>
       ) : (
         <>
+          <View style={styles.profileHero}>
           <View style={styles.header}>
             {user.avatar_url ? <Image source={{ uri: user.avatar_url }} style={styles.avatar} /> : <View style={styles.avatar} />}
             <View style={{ marginLeft: Spacing.md, flex: 1 }}>
@@ -123,6 +125,8 @@ export default function Profile() {
             <TouchableOpacity onPress={() => setEditing(true)}>
               <Text style={{ color: Colors.dark.primary, fontWeight: '600' }}>Edit</Text>
             </TouchableOpacity>
+          </View>
+          <View style={styles.profileStats}><View style={styles.statItem}><Text style={styles.statValue}>{hosting.length}</Text><Text style={styles.statLabel}>Hosting</Text></View><View style={styles.statDivider}/><View style={styles.statItem}><Text style={styles.statValue}>{attending.length}</Text><Text style={styles.statLabel}>Going</Text></View><View style={styles.statDivider}/><View style={styles.statItem}><Text style={styles.statValue}>{posts.length}</Text><Text style={styles.statLabel}>Posts</Text></View></View>
           </View>
           <Text style={[Typography.h3, { color: Colors.dark.text, marginTop: Spacing.xl }]}>Hosting</Text>
           {hosting.map((g) => (
@@ -167,9 +171,23 @@ export default function Profile() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
+  brandRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.xl },
+  brandLockup: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  brandMark: { width: 34, height: 34, borderRadius: 11, backgroundColor: Colors.dark.primary, alignItems: 'center', justifyContent: 'center' },
+  brandMarkText: { color: Colors.dark.background, fontSize: 19, fontWeight: '900' },
+  brandName: { color: Colors.dark.text, fontSize: 17, fontWeight: '800' },
+  brandCaption: { color: Colors.dark.textMuted, fontSize: 8, letterSpacing: 0.7, marginTop: 1 },
+  headerAction: { paddingHorizontal: Spacing.sm, paddingVertical: Spacing.sm, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.dark.borderStrong, backgroundColor: Colors.dark.surface },
+  headerActionText: { color: Colors.dark.primary, fontSize: 10, fontWeight: '700' },
+  profileHero: { backgroundColor: Colors.dark.surface, borderRadius: Radius.xl, padding: Spacing.md, borderWidth: 1, borderColor: Colors.dark.borderStrong },
   header: { flexDirection: 'row', alignItems: 'center' },
+  profileStats: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', marginTop: Spacing.lg, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.dark.border },
+  statItem: { alignItems: 'center', flex: 1, gap: 2 },
+  statValue: { color: Colors.dark.text, fontSize: 18, fontWeight: '900' },
+  statLabel: { color: Colors.dark.textMuted, fontSize: 10 },
+  statDivider: { width: 1, height: 24, backgroundColor: Colors.dark.borderStrong },
   avatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: Colors.dark.glass, borderWidth: 1, borderColor: Colors.dark.border },
-  card: { backgroundColor: Colors.dark.glass, padding: Spacing.md, borderRadius: Radius.md, marginTop: Spacing.sm, borderWidth: 1, borderColor: Colors.dark.border },
+  card: { backgroundColor: Colors.dark.surface, padding: Spacing.md, borderRadius: Radius.lg, marginTop: Spacing.sm, borderWidth: 1, borderColor: Colors.dark.borderStrong },
   input: { backgroundColor: Colors.dark.glass, color: Colors.dark.text, padding: Spacing.md, borderRadius: Radius.md, marginTop: Spacing.md, borderWidth: 1, borderColor: Colors.dark.border },
   btn: { backgroundColor: Colors.dark.primary, padding: Spacing.md, borderRadius: Radius.md, alignItems: 'center', marginTop: Spacing.lg },
   btnText: { color: Colors.dark.background, fontWeight: '700' },
