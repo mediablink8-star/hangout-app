@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Alert, ImageBackground } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius, Typography } from '../../constants/theme';
@@ -12,6 +12,18 @@ import * as Location from 'expo-location';
 import { distanceInKm, IRL_MOODS, IrlMood, parseMissionDescription } from '../../lib/irlMode';
 
 const CATS: Category[] = ['coffee', 'study', 'sports', 'outdoors', 'bar', 'party', 'other'];
+
+function categoryImage(category: string) {
+  switch (category) {
+    case 'coffee': return 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=900&q=85';
+    case 'study': return 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=900&q=85';
+    case 'sports': return 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=900&q=85';
+    case 'outdoors': return 'https://images.unsplash.com/photo-1551632811-561732d1e306?auto=format&fit=crop&w=900&q=85';
+    case 'bar': return 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=900&q=85';
+    case 'party': return 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=900&q=85';
+    default: return 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=85';
+  }
+}
 
 function categoryIcon(category: string) {
   switch (category) {
@@ -183,11 +195,12 @@ export default function MapHome() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.planRail}>
             {gatherings.slice(0, 8).map((g) => (
               <TouchableOpacity key={g.id} accessibilityRole="button" style={styles.planCard} onPress={() => router.push(`/g/${g.id}`)}>
-                <View style={styles.planImagePlaceholder}>
-                  <Ionicons name={categoryIcon(g.category) as any} size={32} color={Colors.dark.primary} />
+                <ImageBackground source={{ uri: categoryImage(g.category) }} style={styles.planImagePlaceholder} imageStyle={styles.planImage} resizeMode="cover">
+                  <View style={styles.planImageShade} />
+                  <View style={styles.planImageIcon}><Ionicons name={categoryIcon(g.category) as any} size={29} color={Colors.dark.text} /></View>
                   <View style={styles.planCategory}><Text style={styles.planCategoryText}>{g.category}</Text></View>
                   <View style={styles.planCount}><Ionicons name="people" size={12} color={Colors.dark.text} /><Text style={styles.planCountText}>{g.spots_left != null ? `${g.spots_left} spots left` : 'Open plan'}</Text></View>
-                </View>
+                </ImageBackground>
                 <View style={styles.planDetails}>
                   <Text numberOfLines={1} style={styles.planTitle}>{g.title}</Text>
                   <Text numberOfLines={1} style={styles.planMeta}><Ionicons name="time-outline" size={12} />  {new Date(g.start_time).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</Text>
@@ -300,7 +313,10 @@ const styles = StyleSheet.create({
   seeAll: { color: Colors.dark.primary, fontSize: 12, fontWeight: '700' },
   planRail: { paddingHorizontal: Spacing.lg, gap: Spacing.sm },
   planCard: { width: 218, borderRadius: Radius.xl, overflow: 'hidden', borderWidth: 1, borderColor: Colors.dark.borderStrong, backgroundColor: Colors.dark.surface },
-  planImagePlaceholder: { height: 128, backgroundColor: '#17251A', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  planImagePlaceholder: { height: 140, backgroundColor: '#17251A', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  planImage: { opacity: 0.94 },
+  planImageShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(3,8,4,0.24)' },
+  planImageIcon: { width: 54, height: 54, borderRadius: 18, backgroundColor: 'rgba(5,10,6,0.58)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.24)', alignItems: 'center', justifyContent: 'center' },
   planCategory: { position: 'absolute', left: 10, bottom: 9, backgroundColor: Colors.dark.primary, paddingHorizontal: 9, paddingVertical: 4, borderRadius: Radius.full },
   planCategoryText: { color: Colors.dark.background, fontSize: 10, fontWeight: '800', textTransform: 'capitalize' },
   planCount: { position: 'absolute', right: 8, top: 8, flexDirection: 'row', gap: 4, alignItems: 'center', backgroundColor: 'rgba(5,8,5,0.72)', paddingHorizontal: 7, paddingVertical: 5, borderRadius: Radius.full },
