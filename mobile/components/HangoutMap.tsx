@@ -28,19 +28,19 @@ export default function HangoutMap({ gatherings, onSelect }: Props) {
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
-    html,body,#map{height:100%;width:100%;margin:0;background:#08090f}
-    .leaflet-container{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#08090f}
-    .leaflet-control-attribution{background:rgba(8,13,10,.8)!important;color:#a0a2b3!important}
-    .leaflet-control-attribution a{color:#9b8cff!important}
-    .leaflet-bar a{background:#11131d!important;color:#f5f5fa!important;border-color:rgba(225,225,255,.1)!important}
-    .hangout-pin{width:34px;height:34px;border-radius:13px 13px 13px 4px;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;background:#9b8cff;border:2px solid #f5f5fa;box-shadow:0 5px 20px rgba(0,0,0,.45)}
+    html,body,#map{height:100%;width:100%;margin:0;background:#0C0A12}
+    .leaflet-container{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0C0A12}
+    .leaflet-control-attribution{background:rgba(18,13,25,.92)!important;color:#C5B9D7!important}
+    .leaflet-control-attribution a{color:#E78AD7!important}
+    .leaflet-bar a{background:#171321!important;color:#F7F1FA!important;border-color:rgba(231,138,215,.18)!important}
+    .hangout-pin{width:34px;height:34px;border-radius:13px 13px 13px 4px;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#E78AD7,#9B86D9);border:2px solid #F7F1FA;box-shadow:0 5px 24px rgba(231,138,215,.35)}
     .hangout-pin span{transform:rotate(45deg);font-size:15px}
-    .you-pin{width:16px;height:16px;border:3px solid #fff;border-radius:50%;background:#9b8cff;box-shadow:0 0 0 7px rgba(155,140,255,.2),0 0 20px rgba(155,140,255,.65)}
-    .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#11131d;color:#f5f5fa;border:1px solid rgba(225,225,255,.12)}
+    .you-pin{width:16px;height:16px;border:3px solid #fff;border-radius:50%;background:#E78AD7;box-shadow:0 0 0 7px rgba(231,138,215,.18),0 0 20px rgba(231,138,215,.5)}
+    .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#171321;color:#F7F1FA;border:1px solid rgba(231,138,215,.2)}
     .leaflet-popup-content{margin:14px 16px;line-height:1.45}
     .popup-title{font-weight:800;font-size:15px;margin-bottom:4px}
-    .popup-category{color:#9b8cff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
-    .popup-go{margin-top:10px;padding:9px 13px;border:0;border-radius:10px;background:#9b8cff;color:#08090f;font-weight:800}
+    .popup-category{color:#E78AD7;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+    .popup-go{margin-top:10px;padding:9px 13px;border:0;border-radius:10px;background:linear-gradient(135deg,#E78AD7,#B9A0F2);color:#241421;font-weight:800}
   </style>
 </head>
 <body>
@@ -49,8 +49,8 @@ export default function HangoutMap({ gatherings, onSelect }: Props) {
 <script>
   const pins = __PINS__;
   const map = L.map('map', { zoomControl: false }).setView([37.9838,23.7275],12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19
     }).addTo(map);
   L.control.zoom({ position: 'bottomright' }).addTo(map);
   const icon = L.divIcon({ className: '', html: '<div class="hangout-pin"><span>✦</span></div>', iconSize: [34,34], iconAnchor: [17,28], popupAnchor: [0,-28] });
@@ -60,7 +60,7 @@ export default function HangoutMap({ gatherings, onSelect }: Props) {
     if (!Number.isFinite(pin.lat) || !Number.isFinite(pin.lng)) return;
     const marker = pin.exact
       ? L.marker([pin.lat,pin.lng], { icon })
-      : L.circle([pin.lat,pin.lng], { radius:300, color:'#9b8cff', weight:2, fillColor:'#9b8cff', fillOpacity:.13 });
+      : L.circle([pin.lat,pin.lng], { radius:300, color:'#E78AD7', weight:2, fillColor:'#B9A0F2', fillOpacity:.13 });
     marker.addTo(map);
     marker.bindPopup('<div class="popup-category">'+safe(pin.category)+'</div><div class="popup-title">'+safe(pin.title)+'</div><div>'+(pin.exact ? safe(pin.address) : 'Exact location shared after host approval')+'</div><button class="popup-go">View hangout</button>');
     marker.on('popupopen', () => {
