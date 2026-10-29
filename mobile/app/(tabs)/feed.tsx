@@ -1,6 +1,7 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Alert, ActivityIndicator } from 'react-native';
 import VideoPlayer from '../../components/VideoPlayer';
+import LiquidGlassBackground from '../../components/LiquidGlassBackground';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors, Spacing, Radius, Typography } from '../../constants/theme';
 import { api, mediaSource } from '../../lib/api';
@@ -74,7 +75,9 @@ export default function Feed() {
   }
 
   return (
-    <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 120 }}>
+    <View style={styles.screenRoot}>
+      <LiquidGlassBackground />
+      <ScrollView ref={scrollRef} style={[styles.container, { backgroundColor: 'transparent' }]} contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 120 }}>
       <View style={styles.brandRow}>
         <View style={styles.brandLockup}>
           <View style={styles.brandMark}><Text style={styles.brandMarkText}>H</Text></View>
@@ -166,11 +169,13 @@ export default function Feed() {
           </Text>
         </View>
       )}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screenRoot: { flex: 1, backgroundColor: Colors.dark.background },
   container: { flex: 1, backgroundColor: Colors.dark.background },
   brandRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.lg },
   brandLockup: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
@@ -210,7 +215,7 @@ const styles = StyleSheet.create({
   retryText: { color: Colors.dark.background, fontWeight: '700', fontSize: 13 },
   emptyCard: { alignItems: 'center', backgroundColor: Colors.dark.glass, padding: Spacing.xl, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.dark.border, marginTop: Spacing.sm },
   emptyMark: { color: Colors.dark.primary, fontSize: 28, marginBottom: Spacing.sm },
-  composer: { backgroundColor: Colors.dark.surface, padding: 16, borderRadius: 24, borderWidth: 1, borderColor: Colors.dark.borderStrong, marginBottom: Spacing.lg, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 3 },
+  composer: { backgroundColor: Colors.dark.glass, padding: 16, borderRadius: 24, borderWidth: 1, borderColor: Colors.dark.borderStrong, marginBottom: Spacing.lg, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 3 },
   input: { backgroundColor: Colors.dark.background, color: Colors.dark.text, padding: 14, borderRadius: Radius.lg, minHeight: 76, textAlignVertical: 'top', borderWidth: 1, borderColor: Colors.dark.borderStrong, fontSize: 14, lineHeight: 21 },
   preview: { marginTop: Spacing.sm },
   previewImg: { width: '100%', height: 160, borderRadius: Radius.md },
@@ -218,7 +223,7 @@ const styles = StyleSheet.create({
   mediaBtnText: { color: Colors.dark.text, fontSize: 13, fontWeight: '600' },
   postBtn: { backgroundColor: Colors.dark.primary, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, borderRadius: Radius.md, marginLeft: 'auto' },
   postBtnText: { color: Colors.dark.background, fontWeight: '700' },
-  card: { backgroundColor: Colors.dark.surface, padding: 16, borderRadius: 24, borderWidth: 1, borderColor: Colors.dark.borderStrong, marginBottom: Spacing.md, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 14, shadowOffset: { width: 0, height: 7 }, elevation: 2 },
+  card: { backgroundColor: Colors.dark.glass, padding: 16, borderRadius: 24, borderWidth: 1, borderColor: Colors.dark.borderStrong, marginBottom: Spacing.md, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 14, shadowOffset: { width: 0, height: 7 }, elevation: 2 },
   postHighlight: { borderColor: Colors.dark.primary, borderWidth: 2 },
   authorRow: { flexDirection: 'row', alignItems: 'center' },
   avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: Colors.dark.glass, borderWidth: 1, borderColor: Colors.dark.borderStrong },
