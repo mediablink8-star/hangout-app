@@ -138,7 +138,7 @@ export default function MessagesInbox() {
             <TouchableOpacity style={styles.row} onPress={() => { api.markConversationRead(item.id).catch(()=>{}); router.push(`/chat/${item.id}` as any); }}>
               <View style={[styles.avatar, item.unread_count > 0 && styles.avatarUnread]}>
                 {item.avatar_url || item.gathering?.host?.avatar_url ? (
-                  <Image source={{ uri: item.avatar_url || item.gathering.host.avatar_url }} style={styles.conversationAvatarImage} />
+                  <Image source={{ uri: (item.avatar_url || item.gathering?.host?.avatar_url) as string }} style={styles.conversationAvatarImage} />
                 ) : item.gathering ? (
                   <Ionicons name={categoryIcon(item.gathering.category) as any} size={20} color={Colors.dark.primary} />
                 ) : (
