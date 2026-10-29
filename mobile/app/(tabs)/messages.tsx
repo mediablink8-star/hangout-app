@@ -51,42 +51,27 @@ export default function MessagesInbox() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <LiquidGlassBackground />
-        <View style={styles.topBrandRow}>
-          <View style={styles.brandLockup}>
-            <View style={styles.brandMark}><Text style={styles.brandMarkText}>H</Text></View>
-            <View><Text style={styles.brandName}>Hangout</Text><Text style={styles.brandCaption}>YOUR CITY, TOGETHER</Text></View>
-          </View>
-        </View>
-        <View style={styles.titleBlock}>
+        <View style={styles.inboxHeader}>
+        <View style={styles.inboxHeading}>
           <Text style={styles.pageTitle}>Messages</Text>
-          <Text style={styles.pageSubtitle}>Bringing your people together.</Text>
+          <Text style={styles.pageSubtitle}>Your conversations, all in one place</Text>
+          {totalUnread > 0 && <Text style={styles.unreadSummary}>{totalUnread} unread {totalUnread === 1 ? 'message' : 'messages'}</Text>}
         </View>
-        <View style={{ paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm }}>
-          {[1,2,3,4,5].map((i) => <View key={i} style={styles.skeleton} />)}
+        <View style={styles.headerActions}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Your profile" style={styles.profileBubble} onPress={() => router.push('/(tabs)/profile')}>
+            {user?.avatar_url ? <Image source={{ uri: user.avatar_url }} style={styles.profileBubbleImage} /> : <Text style={styles.profileBubbleInitial}>{user?.display_name?.trim()?.charAt(0)?.toUpperCase() || 'H'}</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Start a new message" style={styles.iconBtn} onPress={() => router.push('/friends')}>
+            <Ionicons name="create-outline" size={20} color={Colors.dark.text} />
+          </TouchableOpacity>
         </View>
-      </SafeAreaView>
-    );
-  }
-
-  return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <LiquidGlassBackground />
-      <View style={styles.topBrandRow}>
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Your profile" style={styles.profileBubble} onPress={() => router.push('/(tabs)/profile')}>
-          {user?.avatar_url ? <Image source={{ uri: user.avatar_url }} style={styles.profileBubbleImage} /> : <Text style={styles.profileBubbleInitial}>{user?.display_name?.trim()?.charAt(0)?.toUpperCase() || 'H'}</Text>}
-        </TouchableOpacity>
-        <View style={styles.inboxSearch}>
-          <Ionicons name="search" size={16} color={Colors.dark.textMuted} />
-          <TextInput style={styles.inboxSearchInput} placeholder="Search" placeholderTextColor={Colors.dark.textMuted} value={q} onChangeText={(value) => { setQ(value); if (!searching) setSearching(true); }} onSubmitEditing={load} returnKeyType="search" />
-          {!!q && <TouchableOpacity onPress={() => { setQ(''); load(); }}><Ionicons name="close-circle" size={16} color={Colors.dark.textMuted} /></TouchableOpacity>}
-        </View>
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Start a new message" style={styles.iconBtn} onPress={() => router.push('/friends')}>
-          <Ionicons name="create-outline" size={19} color={Colors.dark.text} />
-        </TouchableOpacity>
       </View>
-      <View style={styles.titleBlock}>
-        <Text style={styles.pageTitle}>Messages</Text>
-        {totalUnread > 0 && <Text style={styles.unreadSummary}>{totalUnread} unread {totalUnread === 1 ? 'message' : 'messages'}</Text>}
+      <View style={styles.searchRow}>
+        <View style={styles.inboxSearch}>
+          <Ionicons name="search" size={17} color={Colors.dark.textMuted} />
+          <TextInput style={styles.inboxSearchInput} placeholder="Search conversations" placeholderTextColor={Colors.dark.textMuted} value={q} onChangeText={(value) => { setQ(value); if (!searching) setSearching(true); }} onSubmitEditing={load} returnKeyType="search" />
+          {!!q && <TouchableOpacity accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => { setQ(''); load(); }}><Ionicons name="close-circle" size={17} color={Colors.dark.textMuted} /></TouchableOpacity>}
+        </View>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, alignItems: 'center', gap: Spacing.sm }}>
@@ -199,12 +184,15 @@ function timeAgo(iso: string) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, paddingBottom: Spacing.md },
-  topBrandRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs, paddingBottom: Spacing.sm },
+  inboxHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.sm, gap: Spacing.md },
+  inboxHeading: { flex: 1, minWidth: 0 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  searchRow: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs, paddingBottom: Spacing.xs },
   profileBubble: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(231,138,215,0.16)', borderWidth: 1, borderColor: 'rgba(231,138,215,0.48)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   profileBubbleImage: { width: '100%', height: '100%', borderRadius: 19 },
   profileBubbleInitial: { color: Colors.dark.text, fontSize: 14, fontWeight: '800' },
-  inboxSearch: { flex: 1, height: 38, borderRadius: Radius.full, backgroundColor: 'rgba(255,255,255,0.075)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 8 },
-  inboxSearchInput: { flex: 1, color: Colors.dark.text, fontSize: 12, paddingVertical: 0 },
+  inboxSearch: { width: '100%', height: 46, borderRadius: Radius.lg, backgroundColor: 'rgba(255,255,255,0.055)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10 },
+  inboxSearchInput: { flex: 1, color: Colors.dark.text, fontSize: 14, paddingVertical: 0 },
   brandLockup: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   brandMark: { width: 36, height: 36, borderRadius: 12, backgroundColor: Colors.dark.primary, alignItems: 'center', justifyContent: 'center' },
   brandMarkText: { color: Colors.dark.background, fontSize: 20, fontWeight: '900' },
