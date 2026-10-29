@@ -66,3 +66,19 @@ Uploads accept JPEG, PNG, WebP, MP4, and MOV up to 8 MB. The API inspects and re
 Sharing consent currently records the versioned in-app confirmation, publisher, post, and selected media relationships. The confirmation explains that identifiable people need permission and that removal requests are available. This is not a substitute for legal/privacy review or a richer consent workflow. Reports and photo removal requests enter the existing moderation reports queue; moderators still need an operational response SLA and removal policy before public launch.
 
 The migration is additive and idempotent: startup creates `memories`, `memory_media`, `post_memory_media`, and `memory_share_consents` with foreign keys and indexes. It does not reset or rebuild the existing SQLite database. Back up production data before deployment and verify restoration as part of release operations.
+
+## Reversible demo dataset
+
+To test the app with sample users and activity against the database selected by `DB_PATH`, run these commands from `backend/`:
+
+```sh
+npm run demo:seed
+npm run demo:reset
+```
+
+The seed creates five fictional accounts, Athens-area gatherings, a mix of approved and pending join requests, feed posts, follows, likes, and gathering chats. Seeding again replaces only the demo fixture records. Reset deletes only records with the `demo-` namespace or the `@demo.hangout.test` emails; it does not wipe real users or their content.
+
+**Demo login:** `alex@demo.hangout.test`  
+**Password:** `HangoutDemo2026!`
+
+Other fictional accounts are `maya@demo.hangout.test`, `leo@demo.hangout.test`, `sofia@demo.hangout.test`, and `niko@demo.hangout.test`; they share the same demo password. These credentials are for local/staging testing only. Run the command against the intended database explicitly; the script does not automatically seed production on deployment.
