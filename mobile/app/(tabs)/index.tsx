@@ -183,20 +183,6 @@ export default function MapHome() {
             </TouchableOpacity>
           ))}
         </ScrollView>
-        <View style={styles.discoveryActions}>
-          <TouchableOpacity style={styles.discoveryActionCard} onPress={() => setShowMap(true)}>
-            <View style={styles.discoveryActionIcon}><Ionicons name="navigate" size={18} color={Colors.dark.background} /></View>
-            <Text style={styles.discoveryActionTitle}>Near you</Text>
-            <Text style={styles.discoveryActionCopy}>Explore plans on the live map</Text>
-            <Ionicons name="arrow-forward" size={17} color={Colors.dark.primary} style={styles.actionArrow} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.discoveryActionCard} onPress={() => { setIrlSearch(null); setCat(null); setTimeFilter('upcoming'); }}>
-            <View style={styles.discoveryActionIcon}><Ionicons name="calendar" size={18} color={Colors.dark.background} /></View>
-            <Text style={styles.discoveryActionTitle}>Upcoming</Text>
-            <Text style={styles.discoveryActionCopy}>See what's happening next</Text>
-            <Ionicons name="arrow-forward" size={17} color={Colors.dark.primary} style={styles.actionArrow} />
-          </TouchableOpacity>
-        </View>
         {loadError && !isLoading && (
           <View style={styles.planEmpty}>
             <Ionicons name="cloud-offline-outline" size={24} color={Colors.dark.textMuted} />
@@ -232,8 +218,8 @@ export default function MapHome() {
         ) : (
           <View style={styles.planEmpty}>
             <Ionicons name="sparkles-outline" size={25} color={Colors.dark.primary} />
-            <Text style={styles.discoveryActionTitle}>Be the first to make a plan</Text>
-            <Text style={styles.discoveryActionCopy}>Host a hangout and give people a reason to get out.</Text>
+            <Text style={styles.discoveryActionTitle}>{searchQuery.trim() ? 'No matches found' : 'Be the first to make a plan'}</Text>
+            <Text style={styles.discoveryActionCopy}>{searchQuery.trim() ? 'Try another search or category.' : 'Host a hangout and give people a reason to get out.'}</Text>
             <TouchableOpacity style={styles.hostInlineButton} onPress={() => router.push('/host/new')}><Text style={styles.hostInlineButtonText}>Create a hangout</Text></TouchableOpacity>
           </View>
         )}
