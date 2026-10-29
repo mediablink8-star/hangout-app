@@ -5,7 +5,6 @@ import { AuthProvider, useAuth } from '../lib/auth';
 import { Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Colors } from '../constants/theme';
-import { useColorScheme } from 'react-native';
 
 function DeepLinkHandler() {
   const router = useRouter();
@@ -77,15 +76,14 @@ function LocationBroadcaster() {
   return null;
 }
 export default function RootLayout() {
-  const scheme = useColorScheme();
-  const isDark = scheme !== 'light';
-  const c = isDark ? Colors.dark : Colors.light;
+  // Hangout's current product UI is intentionally dark across every route.
+  const c = Colors.dark;
   return (
     <AuthProvider>
       <DeepLinkHandler />
       <PushRegistrar />
       <LocationBroadcaster />
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.background } }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="auth" options={{ presentation: 'modal' }} />
