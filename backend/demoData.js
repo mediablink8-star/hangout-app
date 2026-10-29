@@ -92,6 +92,13 @@ function cleanup(db) {
   db.prepare("DELETE FROM posts WHERE id LIKE 'demo-%' OR user_id LIKE 'demo-%'").run();
   db.prepare("DELETE FROM notifications WHERE id LIKE 'demo-%' OR user_id LIKE 'demo-%'").run();
   db.prepare("DELETE FROM reports WHERE id LIKE 'demo-%' OR reporter_id LIKE 'demo-%'").run();
+  db.prepare("DELETE FROM blocks WHERE blocker_id LIKE 'demo-%' OR blocked_id LIKE 'demo-%'").run();
+  db.prepare("DELETE FROM push_tokens WHERE user_id LIKE 'demo-%'").run();
+  db.prepare("DELETE FROM live_locations WHERE user_id LIKE 'demo-%'").run();
+  db.prepare("DELETE FROM memory_share_consents WHERE user_id LIKE 'demo-%' OR post_id LIKE 'demo-%'").run();
+  db.prepare("DELETE FROM post_memory_media WHERE post_id LIKE 'demo-%' OR media_id LIKE 'demo-%'").run();
+  db.prepare("DELETE FROM memory_media WHERE uploader_id LIKE 'demo-%' OR memory_id IN (SELECT id FROM memories WHERE gathering_id LIKE 'demo-%')").run();
+  db.prepare("DELETE FROM memories WHERE gathering_id LIKE 'demo-%'").run();
   db.prepare("DELETE FROM share_events WHERE target_id LIKE 'demo-%'").run();
   db.prepare("DELETE FROM gatherings WHERE id LIKE 'demo-%' OR host_id LIKE 'demo-%'").run();
   db.prepare("DELETE FROM profiles WHERE id LIKE 'demo-%' OR email LIKE '%@demo.hangout.test'").run();
