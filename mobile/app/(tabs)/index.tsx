@@ -263,7 +263,7 @@ export default function MapHome() {
                     <Text numberOfLines={1} style={styles.planHostName}>{g.host?.display_name || 'Hangout host'}</Text>
                     <Text numberOfLines={1} style={styles.planMeta}><Ionicons name="location-outline" size={11} />  {g.address || 'Location shared after joining'}</Text>
                   </View>
-                  <Ionicons name="arrow-up-right" size={16} color={Colors.dark.textMuted} />
+                  <Ionicons name="arrow-up-right-box" size={16} color={Colors.dark.textMuted} />
                 </View>
               </TouchableOpacity>
             ))}
@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
   planCard: { width: '48.5%', borderRadius: 17, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.13)', backgroundColor: 'rgba(25,21,36,0.58)', marginBottom: 1 },
   planImagePlaceholder: { height: 188, backgroundColor: '#24202B', justifyContent: 'space-between', overflow: 'hidden' },
   planImage: { opacity: 1 },
-  planImageShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(13,8,18,0.2)' },
+  planImageShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(13,8,18,0.2)' },
   planImageTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 8 },
   planImageBottom: { paddingHorizontal: 10, paddingBottom: 11, paddingTop: 30, backgroundColor: 'rgba(12,8,16,0.42)' },
   planImageTitle: { color: '#FFFFFF', fontSize: 14, lineHeight: 18, fontWeight: '800', letterSpacing: -0.2, textShadowColor: 'rgba(0,0,0,0.35)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 1 } },
