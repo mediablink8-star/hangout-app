@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 
 const styles = StyleSheet.create({
   iconWrap: { width: 40, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
-  iconWrapActive: { backgroundColor: 'rgba(155,140,255,0.15)' },
+  iconWrapActive: { backgroundColor: 'rgba(231,138,215,0.14)' },
   mapIconWrap: { width: 52, height: 52, marginTop: -20, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E78AD7', borderWidth: 4, borderColor: '#171321', ...Shadows.md, shadowColor: '#E78AD7', shadowOpacity: 0.2, shadowRadius: 12 },
   mapIconWrapActive: { backgroundColor: '#F0A5E2' },
 });
