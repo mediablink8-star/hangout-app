@@ -59,9 +59,11 @@ export default function HangoutMap({ gatherings, onSelect }: Props) {
 <script>
 const data = ${data};
 const userCoords = ${uc};
-const map = L.map('map', { zoomControl:false }).setView(userCoords ? [userCoords.lat, userCoords.lng] : [37.9838,23.7275], 13);\nL.control.zoom({position:'bottomright'}).addTo(map);
+const map = L.map('map', { zoomControl:false }).setView(userCoords ? [userCoords.lat, userCoords.lng] : [37.9838,23.7275], 13);
+L.control.zoom({position:'bottomright'}).addTo(map);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19 }).addTo(map);
-const emojiMap = {coffee:'✦',study:'✦',sports:'✦',outdoors:'✦',bar:'✦',party:'✦',other:'✦'};\nconst safe = value => String(value || '').replace(/[&<>\"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[ch]));
+const emojiMap = {coffee:'✦',study:'✦',sports:'✦',outdoors:'✦',bar:'✦',party:'✦',other:'✦'};
+const safe = value => String(value || '').replace(/[&<>\"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[ch]));
 data.forEach(g => {
   if (!g.exact) {
     L.circle([g.lat,g.lng], {radius:300, color:'#E78AD7', fillColor:'#B9A0F2', fillOpacity:0.13, weight:1.5}).addTo(map)
@@ -71,12 +73,6 @@ data.forEach(g => {
     const icon = L.divIcon({ className:'hangout-marker', html:'<div style="background:linear-gradient(135deg,#E78AD7,#B9A0F2);color:#241421;width:32px;height:32px;border-radius:12px 12px 12px 4px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;border:2px solid #F7F1FA;box-shadow:0 4px 18px rgba(231,138,215,.35)">'+(emojiMap[g.category]||'📍')+'</div>', iconSize:[32,32], iconAnchor:[16,16] });
     L.marker([g.lat,g.lng], { icon }).addTo(map)
       .bindPopup('<b>'+safe(g.title)+'</b><br/>'+safe(g.category)+'<br/>'+(g.exact ? safe(g.address||'') : 'Approximate area'))
-      .on('click', () => { window.parent.postMessage({type:'select', id: g.id}, '*'); });
-  }
-  /* Approximate gatherings intentionally use only the privacy circle, not a precise-looking pin. */\n  if (false && !g.exact) {
-    const icon = L.divIcon({ className:'hangout-marker', html:'<div style="background:#C6FF3D;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid #0B0F14;opacity:0.85">'+(emojiMap[g.category]||'📍')+'</div>', iconSize:[32,32], iconAnchor:[16,16] });
-    L.marker([g.lat,g.lng], { icon }).addTo(map)
-      .bindPopup('<b>'+g.title+'</b><br/>'+g.category+'<br/><small>~300m area (approx)</small>')
       .on('click', () => { window.parent.postMessage({type:'select', id: g.id}, '*'); });
   }
 });
