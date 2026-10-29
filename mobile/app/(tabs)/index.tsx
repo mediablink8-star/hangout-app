@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   seeAll: { color: Colors.dark.primary, fontSize: 12, fontWeight: '700' },
   planRail: { paddingHorizontal: Spacing.lg, gap: Spacing.sm },
   planCard: { width: 218, borderRadius: Radius.xl, overflow: 'hidden', borderWidth: 1, borderColor: Colors.dark.borderStrong, backgroundColor: Colors.dark.surface },
-  planImagePlaceholder: { height: 140, backgroundColor: '#17251A', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  planImagePlaceholder: { height: 140, backgroundColor: '#24263A', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   planImage: { opacity: 0.94 },
   planImageShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(3,8,4,0.24)' },
   planImageIcon: { width: 54, height: 54, borderRadius: 18, backgroundColor: 'rgba(5,10,6,0.58)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.24)', alignItems: 'center', justifyContent: 'center' },
