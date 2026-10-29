@@ -4,7 +4,7 @@ import { Colors, Shadows, Radius } from '../../constants/theme';
 import { View, StyleSheet, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { api } from '../../lib/api';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const styles = StyleSheet.create({
   iconWrap: { width: 40, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
