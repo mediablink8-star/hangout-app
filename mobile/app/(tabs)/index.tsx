@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Alert, ImageBackground } from 'react-native';
+import { Animated, View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Alert, ImageBackground, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius, Typography } from '../../constants/theme';
@@ -37,6 +37,8 @@ export default function MapHome() {
   const router = useRouter();
   const { user } = useAuth();
   const [gatherings, setGatherings] = useState<Gathering[]>([]);
+  const [browseMode, setBrowseMode] = useState<'Subscriptions' | 'Explore'>('Explore');
+  const [searchQuery, setSearchQuery] = useState('');
   const [showMap, setShowMap] = useState(false);
   const [cat, setCat] = useState<Category | null>(null);
   const [timeFilter, setTimeFilter] = useState<'all' | 'now' | 'today' | 'upcoming'>('all');
@@ -157,13 +159,33 @@ export default function MapHome() {
         </View>
       </View>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.exploreContent}>
-        <Animated.View style={[styles.exploreIntro, { opacity: introProgress, transform: [{ translateY: introProgress.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) }] }]}>
-          <Text style={styles.exploreEyebrow}>YOUR NEXT STORY STARTS HERE</Text>
-          <Text style={styles.exploreHeadline}>Find your <Text style={{ color: Colors.dark.primary }}>people.</Text></Text>
-          <Text style={styles.exploreSubhead}>Real people. Real plans. Real moments.</Text>
+        <Animated.View style={[styles.referenceSearch, { opacity: introProgress }]}>
+          <Ionicons name="search" size={17} color={Colors.dark.textMuted} />
+          <TextInput value={searchQuery} onChangeText={setSearchQuery} placeholder="Search people, plans..." placeholderTextColor={Colors.dark.textMuted} style={styles.referenceSearchInput} returnKeyType="search" />
+          {!!searchQuery && <TouchableOpacity onPress={() => setSearchQuery('')}><Ionicons name="close-circle" size={17} color={Colors.dark.textMuted} /></TouchableOpacity>}
         </Animated.View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storyRail}>
+          <TouchableOpacity style={styles.storyItem} onPress={() => router.push('/friends')}>
+            <View style={[styles.storyRing, styles.storyAddRing]}><View style={styles.storyAdd}><Ionicons name="add" size={20} color={Colors.dark.text} /></View></View>
+            <Text style={styles.storyName}>Your circle</Text>
+          </TouchableOpacity>
+          {CATS.slice(0, 6).map((value, index) => (
+            <TouchableOpacity key={value} style={styles.storyItem} onPress={() => { setIrlSearch(null); setCat(value); }}>
+              <View style={[styles.storyRing, index % 3 === 0 && styles.storyRingHot]}><ImageBackground source={{ uri: categoryImage(value) }} style={styles.storyImage} imageStyle={{ borderRadius: 999 }}><View style={styles.storyImageTint} /></ImageBackground></View>
+              <Text numberOfLines={1} style={styles.storyName}>{value.charAt(0).toUpperCase() + value.slice(1)}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+        <View style={styles.referenceSegment}>
+          {(['Subscriptions', 'Explore'] as const).map((mode) => (
+            <TouchableOpacity key={mode} accessibilityRole="button" accessibilityState={{ selected: browseMode === mode }} style={[styles.referenceSegmentItem, browseMode === mode && styles.referenceSegmentItemActive]} onPress={() => setBrowseMode(mode)}>
+              <Text style={[styles.referenceSegmentText, browseMode === mode && styles.referenceSegmentTextActive]}>{mode}</Text>
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity style={styles.referenceAddButton} onPress={() => router.push('/host/new')}><Ionicons name="add" size={21} color={Colors.dark.text} /></TouchableOpacity>
+        </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRail}>
-          {([{ id: 'all', label: 'All' }, ...CATS.map((value) => ({ id: value, label: value.charAt(0).toUpperCase() + value.slice(1) }))]).map((item) => (
+          {([{ id: 'all', label: 'For you' }, ...CATS.map((value) => ({ id: value, label: value === 'outdoors' ? 'Nature' : value.charAt(0).toUpperCase() + value.slice(1) }))]).map((item) => (
             <TouchableOpacity key={item.id} accessibilityRole="button" accessibilityState={{ selected: item.id === 'all' ? !cat : cat === item.id }} style={[styles.chip, (item.id === 'all' ? !cat : cat === item.id) && styles.chipOn]} onPress={() => { setIrlSearch(null); setCat(item.id === 'all' ? null : item.id as Category); }}>
               <Text style={[styles.chipText, (item.id === 'all' ? !cat : cat === item.id) && styles.chipTextOn]}>{item.label}</Text>
             </TouchableOpacity>
@@ -192,14 +214,14 @@ export default function MapHome() {
           </View>
         )}
         <View style={styles.sectionHeading}>
-          <Text style={styles.sectionTitle}>Popular plans</Text>
+          <Text style={styles.sectionTitle}>{browseMode === 'Subscriptions' ? 'From your circle' : 'Made for your mood'}</Text>
           <TouchableOpacity onPress={() => { setCat(null); setTimeFilter('upcoming'); }}><Text style={styles.seeAll}>See all →</Text></TouchableOpacity>
         </View>
         {isLoading && gatherings.length === 0 ? (
           <View style={styles.planEmpty}><ActivityIndicator color={Colors.dark.primary} /><Text style={styles.statusText}>Finding plans for you…</Text></View>
-        ) : gatherings.length > 0 ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.planRail}>
-            {gatherings.slice(0, 8).map((g) => (
+        ) : gatherings.filter((g) => !searchQuery.trim() || (g.title + ' ' + g.category + ' ' + (g.address || '')).toLowerCase().includes(searchQuery.trim().toLowerCase())).length > 0 ? (
+          <View style={styles.planRail}>
+            {gatherings.filter((g) => !searchQuery.trim() || (g.title + ' ' + g.category + ' ' + (g.address || '')).toLowerCase().includes(searchQuery.trim().toLowerCase())).slice(0, 8).map((g) => (
               <TouchableOpacity key={g.id} accessibilityRole="button" style={styles.planCard} onPress={() => router.push(`/g/${g.id}`)}>
                 <ImageBackground source={{ uri: categoryImage(g.category) }} style={styles.planImagePlaceholder} imageStyle={styles.planImage} resizeMode="cover">
                   <View style={styles.planImageShade} />
@@ -214,7 +236,7 @@ export default function MapHome() {
                 </View>
               </TouchableOpacity>
             ))}
-          </ScrollView>
+          </View>
         ) : (
           <View style={styles.planEmpty}>
             <Ionicons name="sparkles-outline" size={25} color={Colors.dark.primary} />
@@ -307,7 +329,24 @@ const styles = StyleSheet.create({
   exploreEyebrow: { color: Colors.dark.primary, fontSize: 9, fontWeight: '800', letterSpacing: 1.3, marginBottom: Spacing.xs },
   exploreHeadline: { color: Colors.dark.text, fontSize: 31, lineHeight: 36, fontWeight: '900', letterSpacing: -1 },
   exploreSubhead: { color: Colors.dark.textMuted, fontSize: 13, marginTop: 5 },
-  categoryRail: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md, gap: 7 },
+  categoryRail: { paddingHorizontal: Spacing.lg, paddingTop: 10, paddingBottom: Spacing.md, gap: 7 },
+  referenceSearch: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: Spacing.lg, marginTop: Spacing.sm, marginBottom: Spacing.md, paddingHorizontal: 15, height: 44, borderRadius: Radius.full, backgroundColor: 'rgba(255,255,255,0.075)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)' },
+  referenceSearchInput: { flex: 1, color: Colors.dark.text, fontSize: 13, paddingVertical: 0 },
+  storyRail: { paddingHorizontal: Spacing.lg, paddingBottom: 15, gap: 12, alignItems: 'flex-start' },
+  storyItem: { width: 43, alignItems: 'center', gap: 5 },
+  storyRing: { width: 43, height: 43, borderRadius: 22, padding: 2, borderWidth: 1.5, borderColor: 'rgba(231,113,205,0.8)', overflow: 'hidden' },
+  storyRingHot: { borderColor: '#F6BDA8' },
+  storyAddRing: { borderColor: 'rgba(255,255,255,0.3)' },
+  storyImage: { flex: 1, overflow: 'hidden', borderRadius: 999 },
+  storyImageTint: { flex: 1, backgroundColor: 'rgba(25,13,29,0.12)' },
+  storyAdd: { flex: 1, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+  storyName: { color: Colors.dark.textMuted, fontSize: 9, maxWidth: 54, textAlign: 'center' },
+  referenceSegment: { flexDirection: 'row', alignItems: 'center', marginHorizontal: Spacing.lg, marginBottom: Spacing.sm, padding: 4, borderRadius: Radius.full, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)' },
+  referenceSegmentItem: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 34, borderRadius: Radius.full },
+  referenceSegmentItemActive: { backgroundColor: 'rgba(220,143,207,0.88)', shadowColor: '#E78AD7', shadowOpacity: 0.34, shadowRadius: 10, elevation: 4 },
+  referenceSegmentText: { color: Colors.dark.textMuted, fontSize: 11, fontWeight: '600' },
+  referenceSegmentTextActive: { color: '#241421', fontWeight: '800' },
+  referenceAddButton: { width: 34, height: 34, borderRadius: 17, marginLeft: 4, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
   discoveryActions: { flexDirection: 'row', gap: Spacing.sm, paddingHorizontal: Spacing.lg, marginTop: Spacing.xs },
   discoveryActionCard: { flex: 1, minHeight: 138, padding: 15, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.dark.borderStrong, backgroundColor: Colors.dark.glass, overflow: 'hidden' },
   discoveryActionIcon: { width: 28, height: 28, borderRadius: 9, backgroundColor: Colors.dark.primary, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.sm },
@@ -317,9 +356,9 @@ const styles = StyleSheet.create({
   sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, marginTop: Spacing.xl, marginBottom: Spacing.sm },
   sectionTitle: { color: Colors.dark.text, fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
   seeAll: { color: Colors.dark.primary, fontSize: 12, fontWeight: '700' },
-  planRail: { paddingHorizontal: Spacing.lg, gap: Spacing.sm },
-  planCard: { width: 218, borderRadius: Radius.xl, overflow: 'hidden', borderWidth: 1, borderColor: Colors.dark.borderStrong, backgroundColor: Colors.dark.surface },
-  planImagePlaceholder: { height: 140, backgroundColor: '#24263A', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  planRail: { paddingHorizontal: Spacing.lg, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 },
+  planCard: { width: '48.5%', borderRadius: 17, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.13)', backgroundColor: 'rgba(25,21,36,0.58)', marginBottom: 1 },
+  planImagePlaceholder: { height: 178, backgroundColor: '#24263A', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   planImage: { opacity: 0.94 },
   planImageShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(11,8,18,0.28)' },
   planImageIcon: { width: 54, height: 54, borderRadius: 18, backgroundColor: 'rgba(14,10,23,0.56)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.24)', alignItems: 'center', justifyContent: 'center' },
@@ -327,9 +366,9 @@ const styles = StyleSheet.create({
   planCategoryText: { color: Colors.dark.background, fontSize: 10, fontWeight: '800', textTransform: 'capitalize' },
   planCount: { position: 'absolute', right: 8, top: 8, flexDirection: 'row', gap: 4, alignItems: 'center', backgroundColor: 'rgba(14,10,23,0.76)', paddingHorizontal: 7, paddingVertical: 5, borderRadius: Radius.full },
   planCountText: { color: Colors.dark.text, fontSize: 10, fontWeight: '700' },
-  planDetails: { padding: 14, gap: 8 },
-  planTitle: { color: Colors.dark.text, fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
-  planMeta: { color: Colors.dark.textMuted, fontSize: 10 },
+  planDetails: { padding: 10, gap: 5 },
+  planTitle: { color: Colors.dark.text, fontSize: 13, fontWeight: '800', letterSpacing: -0.2 },
+  planMeta: { color: Colors.dark.textMuted, fontSize: 9 },
   planEmpty: { marginHorizontal: Spacing.lg, minHeight: 120, alignItems: 'center', justifyContent: 'center', padding: Spacing.lg, borderRadius: Radius.lg, backgroundColor: Colors.dark.surface, borderWidth: 1, borderColor: Colors.dark.border, gap: 6 },
   hostInlineButton: { backgroundColor: Colors.dark.primary, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, borderRadius: Radius.full, marginTop: Spacing.sm },
   hostInlineButtonText: { color: Colors.dark.background, fontSize: 12, fontWeight: '800' },
