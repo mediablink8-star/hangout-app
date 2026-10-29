@@ -14,16 +14,47 @@ import { distanceInKm, IRL_MOODS, IrlMood, parseMissionDescription } from '../..
 
 const CATS: Category[] = ['coffee', 'study', 'sports', 'outdoors', 'bar', 'party', 'other'];
 
-function categoryImage(category: string) {
-  switch (category) {
-    case 'coffee': return 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=900&q=85';
-    case 'study': return 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=900&q=85';
-    case 'sports': return 'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=900&q=85';
-    case 'outdoors': return 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=900&q=85';
-    case 'bar': return 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=85';
-    case 'party': return 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=900&q=85';
-    default: return 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=85';
-  }
+function categoryImage(category: string, seed = '') {
+  const photos: Record<string, string[]> = {
+    coffee: [
+      'https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=900&q=85',
+      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=85',
+      'https://images.unsplash.com/photo-1521017432531-fbd92d768814?auto=format&fit=crop&w=900&q=85',
+    ],
+    study: [
+      'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=900&q=85',
+      'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=900&q=85',
+      'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=900&q=85',
+    ],
+    sports: [
+      'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=900&q=85',
+      'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=900&q=85',
+      'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=900&q=85',
+    ],
+    outdoors: [
+      'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=900&q=85',
+      'https://images.unsplash.com/photo-1551632811-561732d1e306?auto=format&fit=crop&w=900&q=85',
+      'https://images.unsplash.com/photo-1472396961693-142e6e269027?auto=format&fit=crop&w=900&q=85',
+    ],
+    bar: [
+      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=85',
+      'https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=900&q=85',
+      'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=900&q=85',
+    ],
+    party: [
+      'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=900&q=85',
+      'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=900&q=85',
+      'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?auto=format&fit=crop&w=900&q=85',
+    ],
+    other: [
+      'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=85',
+      'https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=900&q=85',
+      'https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=900&q=85',
+    ],
+  };
+  const choices = photos[category] || photos.other;
+  const hash = Array.from(seed).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return choices[hash % choices.length];
 }
 
 function categoryIcon(category: string) {
@@ -213,7 +244,7 @@ export default function MapHome() {
           <View style={styles.planRail}>
             {visibleGatherings.slice(0, 8).map((g) => (
               <TouchableOpacity key={g.id} accessibilityRole="button" style={styles.planCard} onPress={() => router.push(`/g/${g.id}`)} activeOpacity={0.9}>
-                <ImageBackground source={{ uri: categoryImage(g.category) }} style={styles.planImagePlaceholder} imageStyle={styles.planImage} resizeMode="cover">
+                <ImageBackground source={{ uri: categoryImage(g.category, g.id) }} style={styles.planImagePlaceholder} imageStyle={styles.planImage} resizeMode="cover">
                   <View style={styles.planImageShade} />
                   <View style={styles.planImageTop}>
                     <View style={styles.planCategory}><Text style={styles.planCategoryText}>{g.category}</Text></View>
