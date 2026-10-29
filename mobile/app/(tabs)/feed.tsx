@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   postHighlight: { borderColor: Colors.dark.primary, borderWidth: 2 },
   authorRow: { flexDirection: 'row', alignItems: 'center' },
   avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: Colors.dark.glass, borderWidth: 1, borderColor: Colors.dark.borderStrong },
-  avatarFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#263629' },
+  avatarFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#24263A' },
   avatarInitial: { color: Colors.dark.primary, fontSize: 16, fontWeight: '900' },
   media: { width: '100%', height: 240, borderRadius: Radius.md, marginTop: Spacing.sm, backgroundColor: Colors.dark.glass },
   actions: { marginTop: Spacing.sm, flexDirection: 'row' },
