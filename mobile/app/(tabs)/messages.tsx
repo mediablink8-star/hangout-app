@@ -59,14 +59,24 @@ export default function MessagesInbox() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <View>
-          <Text style={[Typography.display, { color: Colors.dark.text }]}>Messages</Text>
-          <Text style={[Typography.caption, { color: Colors.dark.textMuted }]}>Your plans, all in one place.</Text>
+      <View style={styles.topBrandRow}>
+        <View style={styles.brandLockup}>
+          <View style={styles.brandMark}><Text style={styles.brandMarkText}>H</Text></View>
+          <View><Text style={styles.brandName}>Hangout</Text><Text style={styles.brandCaption}>YOUR CITY, TOGETHER</Text></View>
         </View>
-        <TouchableOpacity style={styles.iconBtn} onPress={() => setSearching((s) => !s)}>
-          <Ionicons name="search" size={20} color={Colors.dark.primary} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Search messages" style={styles.iconBtn} onPress={() => setSearching((s) => !s)}>
+            <Ionicons name="search" size={19} color={Colors.dark.text} />
+          </TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="New message" style={styles.iconBtn} onPress={() => router.push('/friends')}>
+            <Ionicons name="create-outline" size={19} color={Colors.dark.text} />
+          </TouchableOpacity>
+        </View>
+      </View>
+      <View style={styles.titleBlock}>
+        <Text style={styles.pageTitle}>Messages</Text>
+        <Text style={styles.pageSubtitle}>Pick up where your plans left off.</Text>
+        {totalUnread > 0 && <Text style={styles.unreadSummary}>{totalUnread} unread {totalUnread === 1 ? 'message' : 'messages'}</Text>}
       </View>
 
       {searching && (
@@ -186,6 +196,16 @@ function timeAgo(iso: string) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, paddingBottom: Spacing.md },
+  topBrandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs, paddingBottom: Spacing.md },
+  brandLockup: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  brandMark: { width: 36, height: 36, borderRadius: 12, backgroundColor: Colors.dark.primary, alignItems: 'center', justifyContent: 'center' },
+  brandMarkText: { color: Colors.dark.background, fontSize: 20, fontWeight: '900' },
+  brandName: { color: Colors.dark.text, fontSize: 18, fontWeight: '800', letterSpacing: -0.5 },
+  brandCaption: { color: Colors.dark.textMuted, fontSize: 8, letterSpacing: 0.8, marginTop: 1 },
+  titleBlock: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm },
+  pageTitle: { color: Colors.dark.text, fontSize: 29, fontWeight: '900', letterSpacing: -0.8 },
+  pageSubtitle: { color: Colors.dark.textMuted, fontSize: 12, marginTop: 3 },
+  unreadSummary: { color: Colors.dark.primary, fontSize: 11, fontWeight: '700', marginTop: 7 },
   iconBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.dark.glass, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.dark.border },
   searchBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm },
   searchInput: { flex: 1, backgroundColor: Colors.dark.glass, color: Colors.dark.text, padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.dark.border },
@@ -193,9 +213,9 @@ const styles = StyleSheet.create({
   chipOn: { backgroundColor: Colors.dark.primary, borderColor: Colors.dark.primary },
   chipText: { color: Colors.dark.textMuted, fontSize: 13, fontWeight: '600' },
   chipTextOn: { color: Colors.dark.background },
-  row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.dark.border },
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.dark.primary, alignItems: 'center', justifyContent: 'center' },
-  unreadBadge: { backgroundColor: Colors.dark.primary, minWidth: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  row: { flexDirection: 'row', alignItems: 'center', marginHorizontal: Spacing.lg, marginBottom: 8, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.dark.border, backgroundColor: Colors.dark.glass },
+  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.dark.surface3, borderWidth: 1, borderColor: Colors.dark.borderStrong, alignItems: 'center', justifyContent: 'center' },
+  unreadBadge: { backgroundColor: Colors.dark.primary, minWidth: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   unreadText: { color: Colors.dark.background, fontSize: 11, fontWeight: '700' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xl },
   emptyBtn: { backgroundColor: Colors.dark.primary, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, borderRadius: Radius.md },

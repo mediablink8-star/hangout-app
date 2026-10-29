@@ -31,7 +31,7 @@ export default function TabLayout() {
           bottom: Platform.OS === 'ios' ? 22 : 12,
           left: 20,
           right: 20,
-          height: 70,
+          height: 74,
           borderRadius: Radius.xl,
           backgroundColor: 'transparent',
           borderTopWidth: 0,
@@ -45,13 +45,13 @@ export default function TabLayout() {
         ),
         tabBarActiveTintColor: c.primary,
         tabBarInactiveTintColor: c.textMuted,
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginTop: 1, letterSpacing: 0.2 },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600', marginTop: 2, letterSpacing: 0.1 },
         tabBarItemStyle: { paddingTop: 8, paddingBottom: 6 },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Explore', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "map" : "map-outline"} size={focused ? 22 : 20} color={color as string} /> }} />
+      <Tabs.Screen name="index" options={{ title: 'Explore', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "compass" : "compass-outline"} size={focused ? 22 : 20} color={color as string} /> }} />
       <Tabs.Screen name="messages" options={{ title: 'Messages', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "chatbubbles" : "chatbubbles-outline"} size={focused ? 22 : 20} color={color as string} />, tabBarBadge: badge }} />
-      <Tabs.Screen name="feed" options={{ title: 'Feed', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "images" : "images-outline"} size={focused ? 22 : 20} color={color as string} /> }} />
+      <Tabs.Screen name="feed" options={{ title: 'Feed', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "people" : "people-outline"} size={focused ? 22 : 20} color={color as string} /> }} />
       <Tabs.Screen name="profile" options={{ title: 'Me', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "person-circle" : "person-circle-outline"} size={focused ? 23 : 21} color={color as string} /> }} />
     </Tabs>
   );

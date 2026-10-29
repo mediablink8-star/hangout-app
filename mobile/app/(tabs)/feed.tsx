@@ -74,10 +74,38 @@ export default function Feed() {
 
   return (
     <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 120 }}>
+      <View style={styles.brandRow}>
+        <View style={styles.brandLockup}>
+          <View style={styles.brandMark}><Text style={styles.brandMarkText}>H</Text></View>
+          <View><Text style={styles.brandName}>Hangout</Text><Text style={styles.brandCaption}>YOUR CITY, TOGETHER</Text></View>
+        </View>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Open friends" style={styles.headerIcon} onPress={() => router.push('/friends')}>
+          <Text style={styles.headerIconText}>⌕</Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.pageHeader}>
-        <View style={styles.kickerRow}><View style={styles.liveDot} /><Text style={styles.kicker}>THE HANGOUT CIRCLE</Text></View>
-        <Text style={[Typography.h1, { color: Colors.dark.text }]}>The circle</Text>
+        <Text style={styles.pageTitle}>The Circle</Text>
         <Text style={styles.pageSubtitle}>The small moments, spontaneous plans, and people who make them.</Text>
+      </View>
+      <View style={styles.circleSection}>
+        <Text style={styles.circleSectionTitle}>In your circle</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.circleRail}>
+          <TouchableOpacity accessibilityRole="button" style={styles.circlePerson} onPress={() => router.push('/memories' as any)}>
+            <View style={styles.circleAvatarRing}><View style={styles.addStory}><Text style={styles.addStoryText}>+</Text></View></View>
+            <Text style={styles.circlePersonName}>Add memory</Text>
+          </TouchableOpacity>
+          {[...new Map(posts.filter((post) => post.author?.id && post.author.id !== user.id).map((post) => [post.author.id, post.author])).values()].slice(0, 8).map((author) => (
+            <View key={author.id} style={styles.circlePerson}>
+              <View style={styles.circleAvatarRing}>
+                {author.avatar_url ? <Image source={{ uri: author.avatar_url }} style={styles.circleAvatar} /> : <View style={[styles.circleAvatar, styles.circleAvatarFallback]}><Text style={styles.circleAvatarInitial}>{author.display_name?.charAt(0)?.toUpperCase() || '?'}</Text></View>}
+              </View>
+              <Text numberOfLines={1} style={styles.circlePersonName}>{author.display_name?.split(' ')[0] || 'Member'}</Text>
+            </View>
+          ))}
+          {posts.filter((post) => post.author?.id && post.author.id !== user.id).length === 0 && (
+            <View style={styles.circleHint}><Text style={styles.circleHintText}>People you meet through plans will show up here.</Text></View>
+          )}
+        </ScrollView>
       </View>
       <View style={styles.composer}>
         <Text style={styles.composerTitle}>Share a moment</Text>
@@ -143,6 +171,29 @@ export default function Feed() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
+  brandRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.lg },
+  brandLockup: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  brandMark: { width: 34, height: 34, borderRadius: 11, backgroundColor: Colors.dark.primary, alignItems: 'center', justifyContent: 'center' },
+  brandMarkText: { color: Colors.dark.background, fontSize: 19, fontWeight: '900' },
+  brandName: { color: Colors.dark.text, fontSize: 17, fontWeight: '800' },
+  brandCaption: { color: Colors.dark.textMuted, fontSize: 8, letterSpacing: 0.8, marginTop: 1 },
+  headerIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.dark.glass, borderWidth: 1, borderColor: Colors.dark.border },
+  headerIconText: { color: Colors.dark.text, fontSize: 25, lineHeight: 28 },
+  pageTitle: { color: Colors.dark.text, fontSize: 28, fontWeight: '900', letterSpacing: -0.7 },
+  circleSection: { marginBottom: Spacing.lg },
+  circleSectionTitle: { color: Colors.dark.text, fontSize: 15, fontWeight: '800', marginBottom: Spacing.sm },
+  circleRail: { gap: Spacing.md, paddingVertical: 2 },
+  circlePerson: { width: 62, alignItems: 'center', gap: 5 },
+  circleAvatarRing: { width: 54, height: 54, borderRadius: 27, borderWidth: 2, borderColor: Colors.dark.primary, padding: 3, alignItems: 'center', justifyContent: 'center' },
+  circleAvatar: { width: 44, height: 44, borderRadius: 22 },
+  circleAvatarFallback: { backgroundColor: Colors.dark.surface3, alignItems: 'center', justifyContent: 'center' },
+  circleAvatarInitial: { color: Colors.dark.text, fontSize: 16, fontWeight: '800' },
+  addStory: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: Colors.dark.primary, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.dark.surface },
+  addStoryText: { color: Colors.dark.primary, fontSize: 27, lineHeight: 29, fontWeight: '400' },
+  circlePersonName: { color: Colors.dark.textMuted, fontSize: 10, maxWidth: 62 },
+  circleHint: { justifyContent: 'center', paddingHorizontal: Spacing.md, maxWidth: 180 },
+  circleHintText: { color: Colors.dark.textMuted, fontSize: 11, lineHeight: 16 },
+
   pageHeader: { marginBottom: Spacing.xl, paddingTop: Spacing.md },
   kickerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginBottom: Spacing.xs },
   liveDot: { width: 7, height: 7, borderRadius: Radius.full, backgroundColor: Colors.dark.primary },
@@ -158,7 +209,7 @@ const styles = StyleSheet.create({
   retryText: { color: Colors.dark.background, fontWeight: '700', fontSize: 13 },
   emptyCard: { alignItems: 'center', backgroundColor: Colors.dark.glass, padding: Spacing.xl, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.dark.border, marginTop: Spacing.sm },
   emptyMark: { color: Colors.dark.primary, fontSize: 28, marginBottom: Spacing.sm },
-  composer: { backgroundColor: Colors.dark.surface, padding: Spacing.lg, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.dark.borderStrong, marginBottom: Spacing.xl },
+  composer: { backgroundColor: Colors.dark.surface, padding: Spacing.md, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.dark.borderStrong, marginBottom: Spacing.lg },
   input: { backgroundColor: Colors.dark.glass, color: Colors.dark.text, padding: Spacing.md, borderRadius: Radius.md, minHeight: 60, textAlignVertical: 'top', borderWidth: 1, borderColor: Colors.dark.border },
   preview: { marginTop: Spacing.sm },
   previewImg: { width: '100%', height: 160, borderRadius: Radius.md },
@@ -166,7 +217,7 @@ const styles = StyleSheet.create({
   mediaBtnText: { color: Colors.dark.text, fontSize: 13, fontWeight: '600' },
   postBtn: { backgroundColor: Colors.dark.primary, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, borderRadius: Radius.md, marginLeft: 'auto' },
   postBtnText: { color: Colors.dark.background, fontWeight: '700' },
-  card: { backgroundColor: Colors.dark.surface, padding: Spacing.lg, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.dark.border, marginBottom: Spacing.md },
+  card: { backgroundColor: Colors.dark.surface, padding: Spacing.md, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.dark.border, marginBottom: Spacing.md },
   postHighlight: { borderColor: Colors.dark.primary, borderWidth: 2 },
   authorRow: { flexDirection: 'row', alignItems: 'center' },
   avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.dark.glass, borderWidth: 1, borderColor: Colors.dark.border },
