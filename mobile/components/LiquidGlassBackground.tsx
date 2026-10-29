@@ -16,8 +16,8 @@ export default function LiquidGlassBackground() {
 }
 
 const styles = StyleSheet.create({
-  base: { ...StyleSheet.absoluteFillObject, backgroundColor: '#0C0A12' },
+  base: { ...StyleSheet.absoluteFill, backgroundColor: '#0C0A12' },
   lavenderGlow: { position: 'absolute', top: -120, right: -145, width: 330, height: 330, borderRadius: 165, backgroundColor: 'rgba(127,91,170,0.17)' },
   roseGlow: { position: 'absolute', top: 390, left: -205, width: 320, height: 320, borderRadius: 160, backgroundColor: 'rgba(169,76,129,0.085)' },
-  vignette: { ...StyleSheet.absoluteFillObject, borderWidth: 1, borderColor: 'rgba(255,255,255,0.012)' },
+  vignette: { ...StyleSheet.absoluteFill, borderWidth: 1, borderColor: 'rgba(255,255,255,0.012)' },
 });

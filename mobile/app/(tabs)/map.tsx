@@ -49,7 +49,7 @@ export default function MapTab() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
-  overlay: { ...StyleSheet.absoluteFillObject, pointerEvents: 'box-none' as any },
+  overlay: { ...StyleSheet.absoluteFill, pointerEvents: 'box-none' as any },
   header: { marginHorizontal: Spacing.md, marginTop: Spacing.xs, padding: Spacing.md, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, backgroundColor: 'rgba(23,19,33,0.62)', borderRadius: Radius.xl, borderWidth: 1, borderColor: 'rgba(246,241,255,0.15)', overflow: 'hidden' },
   headingIcon: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: 'rgba(231,138,215,0.16)' },
   title: { ...Typography.h3, color: Colors.dark.text, letterSpacing: -0.25 },

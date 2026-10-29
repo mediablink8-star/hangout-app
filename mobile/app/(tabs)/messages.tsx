@@ -47,8 +47,7 @@ export default function MessagesInbox() {
 
   const totalUnread = convs.reduce((s, c) => s + (c.unread_count || 0), 0);
 
-  if (loading) {
-    return (
+  return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <LiquidGlassBackground />
         <View style={styles.inboxHeader}>
