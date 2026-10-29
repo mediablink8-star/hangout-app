@@ -49,14 +49,14 @@ export default function MapTab() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
   overlay: { ...StyleSheet.absoluteFillObject, pointerEvents: 'box-none' as any },
-  header: { marginHorizontal: Spacing.md, marginTop: Spacing.xs, padding: Spacing.md, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, backgroundColor: 'rgba(13,14,23,0.92)', borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.dark.borderStrong },
-  headingIcon: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: 'rgba(231,138,215,0.14)' },
+  header: { marginHorizontal: Spacing.md, marginTop: Spacing.xs, padding: Spacing.md, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, backgroundColor: 'rgba(23,19,33,0.90)', borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.dark.borderStrong },
+  headingIcon: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: 'rgba(231,138,215,0.16)' },
   title: { ...Typography.h3, color: Colors.dark.text },
   subtitle: { color: Colors.dark.textMuted, fontSize: 11, marginTop: 2 },
-  countPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 7, borderRadius: Radius.full, backgroundColor: Colors.dark.surface2 },
+  countPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 7, borderRadius: Radius.full, backgroundColor: 'rgba(36,28,47,0.92)' },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.dark.primary },
   countText: { color: Colors.dark.text, fontSize: 10, fontWeight: '700' },
   refresh: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.dark.surface2 },
-  status: { alignSelf: 'center', marginTop: Spacing.sm, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.full, backgroundColor: 'rgba(13,14,23,0.92)', flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, borderWidth: 1, borderColor: Colors.dark.border },
+  status: { alignSelf: 'center', marginTop: Spacing.sm, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.full, backgroundColor: 'rgba(23,19,33,0.92)', flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, borderWidth: 1, borderColor: Colors.dark.border },
   statusText: { color: Colors.dark.text, fontSize: 12, fontWeight: '600' },
 });
