@@ -73,13 +73,12 @@ export default function HangoutMap({ gatherings, onSelect }: Props) {
             )}
             {g.exact && <Marker
               coordinate={{ latitude: g.lat, longitude: g.lng }}
-              onPress={() => onSelect(g.id)}
               tracksViewChanges={false}
             >
               <View style={styles.marker}>
                 <Text style={styles.markerEmoji}>✦</Text>
               </View>
-              <Callout tooltip>
+              <Callout tooltip onPress={() => onSelect(g.id)}>
                 <View style={styles.callout}>
                   <Text style={styles.calloutTitle}>{g.title}</Text>
                   <Text style={styles.calloutCat}>{g.category}</Text>
