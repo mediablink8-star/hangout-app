@@ -47,11 +47,18 @@ export default function MessagesInbox() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
-          <Text style={[Typography.display, { color: Colors.dark.text }]}>Messages</Text>
+        <View style={styles.topBrandRow}>
+          <View style={styles.brandLockup}>
+            <View style={styles.brandMark}><Text style={styles.brandMarkText}>H</Text></View>
+            <View><Text style={styles.brandName}>Hangout</Text><Text style={styles.brandCaption}>YOUR CITY, TOGETHER</Text></View>
+          </View>
         </View>
-        <View style={{ padding: Spacing.lg }}>
-          {[1,2,3,4].map((i) => <View key={i} style={styles.skeleton} />)}
+        <View style={styles.titleBlock}>
+          <Text style={styles.pageTitle}>Messages</Text>
+          <Text style={styles.pageSubtitle}>Bringing your people together.</Text>
+        </View>
+        <View style={{ paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm }}>
+          {[1,2,3,4,5].map((i) => <View key={i} style={styles.skeleton} />)}
         </View>
       </SafeAreaView>
     );
@@ -222,5 +229,5 @@ const styles = StyleSheet.create({
   emptyBtnText: { color: Colors.dark.background, fontWeight: '700' },
   emptyBtnSecondary: { backgroundColor: Colors.dark.glass, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.dark.border },
   emptyBtnSecondaryText: { color: Colors.dark.text, fontWeight: '600' },
-  skeleton: { height: 72, backgroundColor: Colors.dark.glass, borderRadius: Radius.md, marginBottom: Spacing.sm },
+  skeleton: { height: 76, backgroundColor: Colors.dark.surface, borderRadius: Radius.lg, marginBottom: Spacing.sm, borderWidth: 1, borderColor: Colors.dark.borderStrong },
 });
