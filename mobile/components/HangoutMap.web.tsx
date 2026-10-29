@@ -61,7 +61,7 @@ const data = ${data};
 const userCoords = ${uc};
 const map = L.map('map', { zoomControl:false }).setView(userCoords ? [userCoords.lat, userCoords.lng] : [37.9838,23.7275], 13);
 L.control.zoom({position:'bottomright'}).addTo(map);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19 }).addTo(map);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', maxZoom: 19 }).addTo(map);
 const emojiMap = {coffee:'✦',study:'✦',sports:'✦',outdoors:'✦',bar:'✦',party:'✦',other:'✦'};
 const safe = value => String(value || '').replace(/[&<>\"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[ch]));
 data.forEach(g => {
