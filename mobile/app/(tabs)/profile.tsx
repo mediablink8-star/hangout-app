@@ -13,6 +13,7 @@ export default function Profile() {
   const [hosting, setHosting] = useState<Gathering[]>([]);
   const [attending, setAttending] = useState<Gathering[]>([]);
   const [posts, setPosts] = useState<any[]>([]);
+  const [followingCount, setFollowingCount] = useState(0);
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
@@ -27,6 +28,8 @@ export default function Profile() {
         const r = await api.myGatherings();
         setHosting(r.hosting || []);
         setAttending(r.attending || []);
+        const following = await api.following();
+        setFollowingCount(Number(following?.count ?? following?.following?.length ?? 0));
         if (user?.id) {
           const p = await api.feed(user.id);
           setPosts(p || []);
@@ -126,7 +129,7 @@ export default function Profile() {
               <Text style={{ color: Colors.dark.primary, fontWeight: '600' }}>Edit</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.profileStats}><View style={styles.statItem}><Text style={styles.statValue}>{hosting.length}</Text><Text style={styles.statLabel}>Hosting</Text></View><View style={styles.statDivider}/><View style={styles.statItem}><Text style={styles.statValue}>{attending.length}</Text><Text style={styles.statLabel}>Going</Text></View><View style={styles.statDivider}/><View style={styles.statItem}><Text style={styles.statValue}>{posts.length}</Text><Text style={styles.statLabel}>Posts</Text></View></View>
+          <View style={styles.profileStats}><View style={styles.statItem}><Text style={styles.statValue}>{hosting.length}</Text><Text style={styles.statLabel}>Hosting</Text><View style={styles.statMeter}><View style={[styles.statMeterFill, { width: `${Math.min(hosting.length / 10, 1) * 100}%` }]} /></View></View><View style={styles.statDivider}/><View style={styles.statItem}><Text style={styles.statValue}>{attending.length}</Text><Text style={styles.statLabel}>Going</Text><View style={styles.statMeter}><View style={[styles.statMeterFill, { width: `${Math.min(attending.length / 10, 1) * 100}%` }]} /></View></View><View style={styles.statDivider}/><View style={styles.statItem}><Text style={styles.statValue}>{posts.length}</Text><Text style={styles.statLabel}>Posts</Text><View style={styles.statMeter}><View style={[styles.statMeterFill, { width: `${Math.min(posts.length / 10, 1) * 100}%` }]} /></View></View><View style={styles.statDivider}/><View style={styles.statItem}><Text style={styles.statValue}>{followingCount}</Text><Text style={styles.statLabel}>Following</Text><View style={styles.statMeter}><View style={[styles.statMeterFill, { width: `${Math.min(followingCount / 10, 1) * 100}%` }]} /></View></View></View>
           </View>
           <Text style={[Typography.h3, { color: Colors.dark.text, marginTop: Spacing.xl }]}>Hosting</Text>
           {hosting.map((g) => (
@@ -186,6 +189,8 @@ const styles = StyleSheet.create({
   statValue: { color: Colors.dark.text, fontSize: 18, fontWeight: '900' },
   statLabel: { color: Colors.dark.textMuted, fontSize: 10 },
   statDivider: { width: 1, height: 24, backgroundColor: Colors.dark.borderStrong },
+  statMeter: { width: '54%', height: 3, marginTop: 4, borderRadius: 2, backgroundColor: Colors.dark.surface3, overflow: 'hidden' },
+  statMeterFill: { height: '100%', borderRadius: 2, backgroundColor: Colors.dark.primary },
   avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: Colors.dark.glass, borderWidth: 2, borderColor: Colors.dark.primary },
   avatarFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#263629' },
   avatarInitial: { color: Colors.dark.primary, fontSize: 26, fontWeight: '900' },
