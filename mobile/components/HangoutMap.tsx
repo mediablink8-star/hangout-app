@@ -49,9 +49,9 @@ export default function HangoutMap({ gatherings, onSelect }: Props) {
 <script>
   const pins = __PINS__;
   const map = L.map('map', { zoomControl: false }).setView([40.7128,-74.006],12);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd', maxZoom: 20
-  }).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
+    }).addTo(map);
   L.control.zoom({ position: 'bottomright' }).addTo(map);
   const icon = L.divIcon({ className: '', html: '<div class="hangout-pin"><span>✦</span></div>', iconSize: [34,34], iconAnchor: [17,28], popupAnchor: [0,-28] });
   const safe = (value) => String(value || '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));

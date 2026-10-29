@@ -60,7 +60,7 @@ export default function HangoutMap({ gatherings, onSelect }: Props) {
 const data = ${data};
 const userCoords = ${uc};
 const map = L.map('map').setView(userCoords ? [userCoords.lat, userCoords.lng] : [40.7128,-74.006], 13);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; CARTO &copy; OSM', subdomains: 'abcd', maxZoom: 20 }).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 }).addTo(map);
 const emojiMap = {coffee:'☕',study:'📚',sports:'⚽',outdoors:'🌲',bar:'🍻',party:'🎉',other:'📍'};
 data.forEach(g => {
   if (!g.exact) {
