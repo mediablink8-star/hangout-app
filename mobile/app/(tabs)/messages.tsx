@@ -1,16 +1,18 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, FlatList, ActivityIndicator, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Spacing, Radius, Typography, Shadows } from '../../constants/theme';
 import { api } from '../../lib/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import LiquidGlassBackground from '../../components/LiquidGlassBackground';
+import { useAuth } from '../../lib/auth';
 
 type Conv = any;
 
 export default function MessagesInbox() {
   const router = useRouter();
+  const { user } = useAuth();
   const [convs, setConvs] = useState<Conv[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -71,15 +73,15 @@ export default function MessagesInbox() {
       <LiquidGlassBackground />
       <View style={styles.topBrandRow}>
         <TouchableOpacity accessibilityRole="button" accessibilityLabel="Your profile" style={styles.profileBubble} onPress={() => router.push('/(tabs)/profile')}>
-          <Ionicons name="person" size={17} color={Colors.dark.text} />
+          {user?.avatar_url ? <Image source={{ uri: user.avatar_url }} style={styles.profileBubbleImage} /> : <Text style={styles.profileBubbleInitial}>{user?.display_name?.trim()?.charAt(0)?.toUpperCase() || 'H'}</Text>}
         </TouchableOpacity>
         <View style={styles.inboxSearch}>
           <Ionicons name="search" size={16} color={Colors.dark.textMuted} />
           <TextInput style={styles.inboxSearchInput} placeholder="Search" placeholderTextColor={Colors.dark.textMuted} value={q} onChangeText={(value) => { setQ(value); if (!searching) setSearching(true); }} onSubmitEditing={load} returnKeyType="search" />
           {!!q && <TouchableOpacity onPress={() => { setQ(''); load(); }}><Ionicons name="close-circle" size={16} color={Colors.dark.textMuted} /></TouchableOpacity>}
         </View>
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel="New message" style={styles.iconBtn} onPress={() => router.push('/friends')}>
-          <Ionicons name="notifications-outline" size={18} color={Colors.dark.text} />
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Start a new message" style={styles.iconBtn} onPress={() => router.push('/friends')}>
+          <Ionicons name="create-outline" size={19} color={Colors.dark.text} />
         </TouchableOpacity>
       </View>
       <View style={styles.titleBlock}>
@@ -135,10 +137,12 @@ export default function MessagesInbox() {
           renderItem={({ item }) => (
             <TouchableOpacity style={styles.row} onPress={() => { api.markConversationRead(item.id).catch(()=>{}); router.push(`/chat/${item.id}` as any); }}>
               <View style={[styles.avatar, item.unread_count > 0 && styles.avatarUnread]}>
-                {item.gathering ? (
-                  <Text style={{ fontSize: 20 }}>{categoryEmoji(item.gathering.category)}</Text>
+                {item.avatar_url || item.gathering?.host?.avatar_url ? (
+                  <Image source={{ uri: item.avatar_url || item.gathering.host.avatar_url }} style={styles.conversationAvatarImage} />
+                ) : item.gathering ? (
+                  <Ionicons name={categoryIcon(item.gathering.category) as any} size={20} color={Colors.dark.primary} />
                 ) : (
-                  <Text style={{ color: Colors.dark.primary, fontSize: 18, fontWeight: '900' }}>{(item.title || '?').charAt(0).toUpperCase()}</Text>
+                  <Text style={{ color: Colors.dark.text, fontSize: 18, fontWeight: '800' }}>{(item.title || '?').charAt(0).toUpperCase()}</Text>
                 )}
               </View>
               <View style={{ flex: 1, marginLeft: Spacing.md }}>
@@ -177,10 +181,10 @@ export default function MessagesInbox() {
   );
 }
 
-function categoryEmoji(c: string) {
+function categoryIcon(c: string) {
   switch (c) {
-    case 'coffee': return '☕'; case 'study': return '📚'; case 'sports': return '⚽';
-    case 'outdoors': return '🌳'; case 'bar': return '🍸'; case 'party': return '🎉'; default: return '📍';
+    case 'coffee': return 'cafe-outline'; case 'study': return 'book-outline'; case 'sports': return 'football-outline';
+    case 'outdoors': return 'leaf-outline'; case 'bar': return 'wine-outline'; case 'party': return 'musical-notes-outline'; default: return 'location-outline';
   }
 }
 function timeAgo(iso: string) {
@@ -196,7 +200,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, paddingBottom: Spacing.md },
   topBrandRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs, paddingBottom: Spacing.sm },
-  profileBubble: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(231,138,215,0.22)', borderWidth: 1, borderColor: 'rgba(231,138,215,0.55)', alignItems: 'center', justifyContent: 'center' },
+  profileBubble: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(231,138,215,0.16)', borderWidth: 1, borderColor: 'rgba(231,138,215,0.48)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  profileBubbleImage: { width: '100%', height: '100%', borderRadius: 19 },
+  profileBubbleInitial: { color: Colors.dark.text, fontSize: 14, fontWeight: '800' },
   inboxSearch: { flex: 1, height: 38, borderRadius: Radius.full, backgroundColor: 'rgba(255,255,255,0.075)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 8 },
   inboxSearchInput: { flex: 1, color: Colors.dark.text, fontSize: 12, paddingVertical: 0 },
   brandLockup: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
@@ -218,6 +224,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', marginHorizontal: Spacing.lg, marginBottom: 7, paddingHorizontal: 10, paddingVertical: 10, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.075)', backgroundColor: 'rgba(255,255,255,0.055)' },
   avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#24263A', borderWidth: 1, borderColor: Colors.dark.borderStrong, alignItems: 'center', justifyContent: 'center' },
   avatarUnread: { borderColor: Colors.dark.primary, borderWidth: 2 },
+  conversationAvatarImage: { width: '100%', height: '100%', borderRadius: 26 },
   unreadBadge: { backgroundColor: Colors.dark.primary, minWidth: 23, height: 23, borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 7, shadowColor: Colors.dark.primary, shadowOpacity: 0.18, shadowRadius: 8, elevation: 2 },
   unreadText: { color: Colors.dark.background, fontSize: 11, fontWeight: '700' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xl },
