@@ -277,18 +277,6 @@ export default function MapHome() {
           </View>
         )}
         <View style={styles.sectionHeading}>
-          <Text style={styles.sectionTitle}>People nearby</Text>
-          <TouchableOpacity onPress={() => router.push('/friends')}><Text style={styles.seeAll}>Find people →</Text></TouchableOpacity>
-        </View>
-        <TouchableOpacity style={styles.peopleCard} onPress={() => router.push('/friends')}>
-          <View style={styles.peopleIcon}><Ionicons name="people" size={23} color={Colors.dark.background} /></View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.discoveryActionTitle}>Your city is full of potential friends</Text>
-            <Text style={styles.discoveryActionCopy}>Find people, meet through shared plans, and build your circle.</Text>
-          </View>
-          <Ionicons name="arrow-forward" size={18} color={Colors.dark.primary} />
-        </TouchableOpacity>
-        <View style={styles.sectionHeading}>
           <Text style={styles.sectionTitle}>Make something happen</Text>
         </View>
         <TouchableOpacity style={styles.irlCta} onPress={() => setIrlSheet(true)}>
