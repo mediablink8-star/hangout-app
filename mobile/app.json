@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Hangout Map",
+    "name": "Hangout",
     "slug": "hangout-map",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -16,7 +16,7 @@
     "android": {
       "package": "com.hangout.map",
       "adaptiveIcon": {
-        "backgroundColor": "#0B0F14"
+        "backgroundColor": "#0C0A12"
       }
     },
     "plugins": [
