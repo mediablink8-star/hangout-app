@@ -11,7 +11,9 @@ export default function UserProfile() {
   useEffect(() => { (async () => { try { setU(await api.user(id!)); } catch (e: any) { Alert.alert('Error', e.message); } })(); }, [id]);
   if (!u) return <View style={styles.container}><Text style={{ color: Colors.dark.text }}>Loading...</Text></View>;
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.lg }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 120 }}>
+      <View style={styles.brandRow}><View style={styles.brandLockup}><View style={styles.brandMark}><Text style={styles.brandMarkText}>H</Text></View><View><Text style={styles.brandName}>Hangout</Text><Text style={styles.brandCaption}>MEET THROUGH MOMENTS</Text></View></View><TouchableOpacity accessibilityRole="button" style={styles.backButton} onPress={() => router.back()}><Text style={styles.backText}>‹</Text></TouchableOpacity></View>
+      <View style={styles.profileHero}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         {u.avatar_url ? <Image source={{ uri: u.avatar_url }} style={styles.avatar} /> : <View style={styles.avatar} />}
         <View style={{ marginLeft: Spacing.md, flex: 1 }}>
@@ -54,8 +56,17 @@ export default function UserProfile() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
-  avatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: Colors.dark.glass, borderWidth: 1, borderColor: Colors.dark.border },
-  card: { backgroundColor: Colors.dark.glass, padding: Spacing.md, borderRadius: Radius.md, marginTop: Spacing.sm, borderWidth: 1, borderColor: Colors.dark.border },
+  brandRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.xl },
+  brandLockup: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  brandMark: { width: 34, height: 34, borderRadius: 11, backgroundColor: Colors.dark.primary, alignItems: 'center', justifyContent: 'center' },
+  brandMarkText: { color: Colors.dark.background, fontSize: 19, fontWeight: '900' },
+  brandName: { color: Colors.dark.text, fontSize: 17, fontWeight: '800' },
+  brandCaption: { color: Colors.dark.textMuted, fontSize: 8, letterSpacing: 0.7, marginTop: 1 },
+  backButton: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.dark.surface, borderWidth: 1, borderColor: Colors.dark.borderStrong },
+  backText: { color: Colors.dark.text, fontSize: 26, lineHeight: 28 },
+  profileHero: { backgroundColor: Colors.dark.surface, padding: Spacing.lg, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.dark.borderStrong, marginBottom: Spacing.lg },
+  avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: Colors.dark.glass, borderWidth: 2, borderColor: Colors.dark.primary },
+  card: { backgroundColor: Colors.dark.surface, padding: Spacing.md, borderRadius: Radius.lg, marginTop: Spacing.sm, borderWidth: 1, borderColor: Colors.dark.borderStrong },
   btn: { padding: Spacing.md, borderRadius: Radius.md, alignItems: 'center' },
   btnText: { color: Colors.dark.background, fontWeight: '700' },
 });
