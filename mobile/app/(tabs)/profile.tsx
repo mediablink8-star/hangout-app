@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   statMeter: { width: '54%', height: 3, marginTop: 4, borderRadius: 2, backgroundColor: Colors.dark.surface3, overflow: 'hidden' },
   statMeterFill: { height: '100%', borderRadius: 2, backgroundColor: Colors.dark.primary },
   avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: Colors.dark.glass, borderWidth: 2, borderColor: Colors.dark.primary },
-  avatarFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#263629' },
+  avatarFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#24263A' },
   avatarInitial: { color: Colors.dark.primary, fontSize: 26, fontWeight: '900' },
   card: { backgroundColor: Colors.dark.surface, padding: 16, borderRadius: Radius.xl, marginTop: Spacing.sm, borderWidth: 1, borderColor: Colors.dark.borderStrong },
   input: { backgroundColor: Colors.dark.glass, color: Colors.dark.text, padding: Spacing.md, borderRadius: Radius.md, marginTop: Spacing.md, borderWidth: 1, borderColor: Colors.dark.border },
