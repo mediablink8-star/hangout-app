@@ -5,6 +5,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors, Spacing, Radius, Typography } from '../../constants/theme';
 import { api, mediaSource } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
+import { Ionicons } from '@expo/vector-icons';
 
 interface Post {
   id: string;
@@ -80,7 +81,7 @@ export default function Feed() {
           <View><Text style={styles.brandName}>Hangout</Text><Text style={styles.brandCaption}>YOUR CITY, TOGETHER</Text></View>
         </View>
         <TouchableOpacity accessibilityRole="button" accessibilityLabel="Open friends" style={styles.headerIcon} onPress={() => router.push('/friends')}>
-          <Text style={styles.headerIconText}>⌕</Text>
+          <Ionicons name="people-outline" size={19} color={Colors.dark.text} />
         </TouchableOpacity>
       </View>
       <View style={styles.pageHeader}>
