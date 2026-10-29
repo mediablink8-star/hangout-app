@@ -572,6 +572,27 @@ app.get('/feed', auth, (req, res) => {
   res.json(out);
 });
 
+app.get('/feed/:id/comments', auth, (req, res) => {
+  const post = db.prepare('SELECT user_id FROM posts WHERE id=?').get(req.params.id);
+  if (!post) return res.status(404).json({ error: 'post not found' });
+  const blocked = db.prepare('SELECT 1 FROM blocks WHERE (blocker_id=? AND blocked_id=?) OR (blocker_id=? AND blocked_id=?)').get(req.userId, post.user_id, post.user_id, req.userId);
+  if (blocked) return res.status(404).json({ error: 'post not found' });
+  const rows = db.prepare(`SELECT c.id,c.post_id,c.user_id,c.body,c.created_at,p.display_name,p.avatar_url
+    FROM post_comments c JOIN profiles p ON p.id=c.user_id WHERE c.post_id=? ORDER BY c.created_at ASC LIMIT 200`).all(req.params.id);
+  res.json(rows.filter(r => !db.prepare('SELECT 1 FROM blocks WHERE (blocker_id=? AND blocked_id=?) OR (blocker_id=? AND blocked_id=?)').get(req.userId,r.user_id,r.user_id,req.userId))
+    .map(r => ({ id:r.id, post_id:r.post_id, user_id:r.user_id, body:r.body, created_at:r.created_at, author:{id:r.user_id,display_name:r.display_name,avatar_url:r.avatar_url} })));
+});
+app.post('/feed/:id/comments', auth, (req, res) => {
+  const post = db.prepare('SELECT user_id FROM posts WHERE id=?').get(req.params.id);
+  if (!post) return res.status(404).json({ error: 'post not found' });
+  const blocked = db.prepare('SELECT 1 FROM blocks WHERE (blocker_id=? AND blocked_id=?) OR (blocker_id=? AND blocked_id=?)').get(req.userId, post.user_id, post.user_id, req.userId);
+  if (blocked) return res.status(404).json({ error: 'post not found' });
+  const body = typeof req.body?.body === 'string' ? req.body.body.trim() : '';
+  if (!body || body.length > 1000) return res.status(400).json({ error: 'comment must be 1-1000 characters' });
+  const id = uid();
+  db.prepare('INSERT INTO post_comments (id,post_id,user_id,body) VALUES (?,?,?,?)').run(id,req.params.id,req.userId,body);
+  res.status(201).json({ id });
+});
 app.get('/feed/:postId/media/:mediaId/content', auth, async (req, res) => {
   const post = db.prepare('SELECT user_id FROM posts WHERE id=?').get(req.params.postId);
   if (!post) return res.status(404).json({ error: 'media not found' });
