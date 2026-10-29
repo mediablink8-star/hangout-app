@@ -79,12 +79,15 @@ export default function Feed() {
       <LiquidGlassBackground />
       <ScrollView ref={scrollRef} style={[styles.container, { backgroundColor: 'transparent' }]} contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 120 }}>
       <View style={styles.brandRow}>
-        <View style={styles.brandLockup}>
-          <View style={styles.brandMark}><Text style={styles.brandMarkText}>H</Text></View>
-          <View><Text style={styles.brandName}>Hangout</Text><Text style={styles.brandCaption}>YOUR CITY, TOGETHER</Text></View>
-        </View>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Open your profile" style={styles.feedProfile} onPress={() => router.push('/(tabs)/profile')}>
+          {user.avatar_url ? <Image source={{ uri: user.avatar_url }} style={styles.feedProfileImage} /> : <Text style={styles.feedProfileInitial}>{user.display_name?.trim()?.charAt(0)?.toUpperCase() || 'H'}</Text>}
+        </TouchableOpacity>
+        <View style={styles.feedHeaderLabel}><Text style={styles.feedHeaderTitle}>The Circle</Text><Text style={styles.feedHeaderSubtitle}>Your people, your moments</Text></View>
         <TouchableOpacity accessibilityRole="button" accessibilityLabel="Open friends" style={styles.headerIcon} onPress={() => router.push('/friends')}>
           <Ionicons name="people-outline" size={19} color={Colors.dark.text} />
+        </TouchableOpacity>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Open notifications" style={styles.headerIcon} onPress={() => router.push('/notifications')}>
+          <Ionicons name="notifications-outline" size={18} color={Colors.dark.text} />
         </TouchableOpacity>
       </View>
       <View style={styles.pageHeader}>
@@ -177,7 +180,13 @@ export default function Feed() {
 const styles = StyleSheet.create({
   screenRoot: { flex: 1, backgroundColor: Colors.dark.background },
   container: { flex: 1, backgroundColor: Colors.dark.background },
-  brandRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.lg },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: Spacing.lg },
+  feedProfile: { width: 39, height: 39, borderRadius: 20, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(231,138,215,0.16)', borderWidth: 1, borderColor: 'rgba(231,138,215,0.5)' },
+  feedProfileImage: { width: '100%', height: '100%', borderRadius: 20 },
+  feedProfileInitial: { color: Colors.dark.text, fontSize: 14, fontWeight: '800' },
+  feedHeaderLabel: { flex: 1, marginLeft: 10 },
+  feedHeaderTitle: { color: Colors.dark.text, fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
+  feedHeaderSubtitle: { color: Colors.dark.textMuted, fontSize: 10, marginTop: 2 },
   brandLockup: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   brandMark: { width: 34, height: 34, borderRadius: 11, backgroundColor: Colors.dark.primary, alignItems: 'center', justifyContent: 'center' },
   brandMarkText: { color: Colors.dark.background, fontSize: 19, fontWeight: '900' },
