@@ -133,6 +133,7 @@ export default function MapHome() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <LiquidGlassBackground />
       <View style={styles.header}>
         <View style={styles.brandRow}>
           <View style={styles.brandLockup}>
