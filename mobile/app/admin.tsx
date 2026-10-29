@@ -22,38 +22,60 @@ export default function AdminScreen() {
   useEffect(() => { load(); }, []);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.dark.background }}>
-      <ScrollView contentContainerStyle={{ padding: Spacing.lg }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={[Typography.display, { color: Colors.dark.text }]}>Admin</Text>
-          <TouchableOpacity onPress={() => router.back()}><Text style={{ color: Colors.dark.primary }}>Close</Text></TouchableOpacity>
-        </View>
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.brandRow}><View style={styles.brandLockup}><View style={styles.brandMark}><Text style={styles.brandMarkText}>H</Text></View><View><Text style={styles.brandName}>Hangout</Text><Text style={styles.brandCaption}>OPERATIONS</Text></View></View><TouchableOpacity accessibilityRole="button" style={styles.closeButton} onPress={() => router.back()}><Text style={styles.closeText}>Close</Text></TouchableOpacity></View>
+        <Text style={styles.eyebrow}>PRIVATE WORKSPACE</Text>
+        <Text style={styles.pageTitle}>Admin dashboard</Text>
+        <Text style={styles.subtitle}>Keep the community healthy and welcoming.</Text>
+        <View style={styles.statsRow}><View style={styles.statCard}><Text style={styles.statValue}>{gatherings.length}</Text><Text style={styles.statLabel}>Gatherings</Text></View><View style={styles.statCard}><Text style={styles.statValue}>{reports.length}</Text><Text style={styles.statLabel}>Reports</Text></View><View style={styles.statCard}><Text style={styles.statValue}>{hosts.length}</Text><Text style={styles.statLabel}>Inactive hosts</Text></View></View>
 
-        <Text style={[Typography.h2, { color: Colors.dark.text, marginTop: Spacing.lg }]}>Gatherings ({gatherings.length})</Text>
+        <Text style={styles.sectionTitle}>Gatherings</Text>
         {gatherings.map((g: any) => (
-          <Text key={g.id} style={{ color: Colors.dark.textMuted, marginTop: Spacing.xs }}>{g.title} — {g.category}</Text>
+          <View key={g.id} style={styles.itemCard}><Text style={styles.itemTitle}>{g.title}</Text><Text style={styles.itemCopy}>{g.category}</Text></View>
         ))}
 
-        <Text style={[Typography.h2, { color: Colors.dark.text, marginTop: Spacing.lg }]}>Inactive hosts ({hosts.length})</Text>
+        <Text style={styles.sectionTitle}>Inactive hosts</Text>
         {hosts.map((h: any) => (
-          <View key={h.id} style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: Spacing.xs }}>
-            <Text style={{ color: Colors.dark.textMuted }}>{h.display_name}</Text>
-            <TouchableOpacity onPress={async () => { try { await api.adminSetFoundingHost(h.id, true); Alert.alert('Granted'); load(); } catch (e: any) { Alert.alert('Error', e.message); } }}>
-              <Text style={{ color: Colors.dark.primary }}>Grant pioneer</Text>
-            </TouchableOpacity>
-          </View>
+          <View key={h.id} style={styles.itemCard}><Text style={styles.itemTitle}>{h.display_name}</Text><TouchableOpacity style={styles.actionButton} onPress={async () => { try { await api.adminSetFoundingHost(h.id, true); Alert.alert('Granted'); load(); } catch (e: any) { Alert.alert('Error', e.message); } }}><Text style={styles.actionText}>Grant pioneer</Text></TouchableOpacity></View>
         ))}
 
-        <Text style={[Typography.h2, { color: Colors.dark.text, marginTop: Spacing.lg }]}>Reports ({reports.length})</Text>
+        <Text style={styles.sectionTitle}>Reports</Text>
         {reports.map((r: any) => (
-          <Text key={r.id} style={{ color: Colors.dark.textMuted, marginTop: Spacing.xs }}>{r.target_type} — {r.reason}</Text>
+          <View key={r.id} style={styles.itemCard}><Text style={styles.itemTitle}>{r.target_type}</Text><Text style={styles.itemCopy}>{r.reason}</Text></View>
         ))}
 
-        <Text style={[Typography.h2, { color: Colors.dark.text, marginTop: Spacing.lg }]}>Cancellations ({cancellations.length})</Text>
+        <Text style={styles.sectionTitle}>Cancellations</Text>
         {cancellations.map((c: any) => (
-          <Text key={c.id} style={{ color: Colors.dark.textMuted, marginTop: Spacing.xs }}>{c.title}</Text>
+          <View key={c.id} style={styles.itemCard}><Text style={styles.itemTitle}>{c.title}</Text></View>
         ))}
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.dark.background },
+  content: { padding: Spacing.lg, paddingBottom: 100 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.xl },
+  brandLockup: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  brandMark: { width: 34, height: 34, borderRadius: 11, backgroundColor: Colors.dark.primary, alignItems: 'center', justifyContent: 'center' },
+  brandMarkText: { color: Colors.dark.background, fontSize: 19, fontWeight: '900' },
+  brandName: { color: Colors.dark.text, fontSize: 17, fontWeight: '800' },
+  brandCaption: { color: Colors.dark.textMuted, fontSize: 8, letterSpacing: 0.8, marginTop: 1 },
+  closeButton: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.full, backgroundColor: Colors.dark.surface, borderWidth: 1, borderColor: Colors.dark.borderStrong },
+  closeText: { color: Colors.dark.textMuted, fontSize: 12, fontWeight: '700' },
+  eyebrow: { color: Colors.dark.primary, fontSize: 10, fontWeight: '900', letterSpacing: 1.3 },
+  pageTitle: { color: Colors.dark.text, fontSize: 29, fontWeight: '900', letterSpacing: -0.8, marginTop: Spacing.xs },
+  subtitle: { color: Colors.dark.textMuted, fontSize: 13, marginTop: Spacing.xs },
+  statsRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.lg },
+  statCard: { flex: 1, padding: Spacing.md, borderRadius: Radius.lg, backgroundColor: Colors.dark.surface, borderWidth: 1, borderColor: Colors.dark.borderStrong },
+  statValue: { color: Colors.dark.primary, fontSize: 23, fontWeight: '900' },
+  statLabel: { color: Colors.dark.textMuted, fontSize: 10, marginTop: 3 },
+  sectionTitle: { color: Colors.dark.text, fontSize: 18, fontWeight: '800', marginTop: Spacing.xl, marginBottom: Spacing.sm },
+  itemCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md, padding: Spacing.md, borderRadius: Radius.lg, backgroundColor: Colors.dark.surface, borderWidth: 1, borderColor: Colors.dark.border, marginBottom: Spacing.sm },
+  itemTitle: { color: Colors.dark.text, fontSize: 13, fontWeight: '700', flex: 1 },
+  itemCopy: { color: Colors.dark.textMuted, fontSize: 11, marginTop: 3 },
+  actionButton: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.full, backgroundColor: Colors.dark.primary },
+  actionText: { color: Colors.dark.background, fontSize: 11, fontWeight: '800' },
+});
