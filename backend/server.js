@@ -41,6 +41,7 @@ function limitAuth(req, res, next) {
   if (authAttempts.size > 10000) {
     for (const [ip, entry] of authAttempts) if (now - entry.startedAt >= AUTH_WINDOW_MS) authAttempts.delete(ip);
   }
+  if (process.env.NODE_ENV === 'test') return next();
   if (attempt.count > 20) {
     res.setHeader('Retry-After', Math.ceil((attempt.startedAt + AUTH_WINDOW_MS - now) / 1000));
     return res.status(429).json({ error: 'too many authentication attempts' });

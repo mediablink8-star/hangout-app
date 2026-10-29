@@ -22,21 +22,20 @@ interface Post {
 export default function Feed() {
   const router = useRouter();
   const { postId } = useLocalSearchParams<{ postId?: string }>();
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<any>(null);
   const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [body, setBody] = useState('');
   const [posting, setPosting] = useState(false);
   const [publicShareConfirmed, setPublicShareConfirmed] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
     setLoadError(false);
     try { setPosts(await api.feed()); }
     catch { setLoadError(true); }
-    finally { setLoading(false); }
+    finally { setInitialLoading(false); }
   }, []);
   useFocusEffect(useCallback(() => { load(); return undefined; }, [load]));
 
@@ -101,8 +100,8 @@ export default function Feed() {
         </View>
       </View>
 
-      {loading && <View accessibilityLiveRegion="polite" style={styles.stateCard}><ActivityIndicator color={Colors.dark.primary} /><Text style={styles.stateText}>Loading the latest posts…</Text></View>}
-      {loadError && !loading && <View accessibilityLiveRegion="polite" style={styles.errorCard}><Text style={styles.stateTitle}>Couldn’t refresh the feed</Text><Text style={styles.stateText}>Check your connection and try again.</Text><TouchableOpacity accessibilityRole="button" style={styles.retryBtn} onPress={load}><Text style={styles.retryText}>Try again</Text></TouchableOpacity></View>}
+      {initialLoading && posts.length === 0 && <View accessibilityLiveRegion="polite" style={styles.stateCard}><ActivityIndicator color={Colors.dark.primary} /><Text style={styles.stateText}>Loading the latest posts…</Text></View>}
+      {loadError && !initialLoading && <View accessibilityLiveRegion="polite" style={styles.errorCard}><Text style={styles.stateTitle}>Couldn’t refresh the feed</Text><Text style={styles.stateText}>Check your connection and try again.</Text><TouchableOpacity accessibilityRole="button" style={styles.retryBtn} onPress={load}><Text style={styles.retryText}>Try again</Text></TouchableOpacity></View>}
       {posts.map((p) => (
         <View key={p.id} onLayout={event => { if (postId && p.id === postId) scrollRef.current?.scrollTo({ y: Math.max(0, event.nativeEvent.layout.y - 10), animated: true }); }} style={[styles.card, p.id === postId && styles.postHighlight]}>
           <View style={styles.authorRow}>
@@ -129,7 +128,7 @@ export default function Feed() {
           </View>
         </View>
       ))}
-      {posts.length === 0 && !loading && !loadError && (
+      {posts.length === 0 && !initialLoading && !loadError && (
         <View style={styles.emptyCard}>
           <Text style={styles.emptyMark}>✦</Text>
           <Text style={styles.stateTitle}>A fresh start</Text>

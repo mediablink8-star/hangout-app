@@ -15,7 +15,11 @@ export async function restoreToken() {
 }
 export function getToken() { return token; }
 const MEDIA_BASE = process.env.EXPO_PUBLIC_API_URL || (Platform.OS === 'android' ? 'http://10.0.2.2:4000' : 'http://localhost:4000');
-export function mediaSource(path: string) { return { uri: MEDIA_BASE + path, headers: token ? { Authorization: 'Bearer ' + token } : {} }; }
+export function mediaSource(path: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = 'Bearer ' + token;
+  return { uri: MEDIA_BASE + path, headers };
+}
 
 async function request(path: string, opts: RequestInit = {}) {
   if (!__DEV__ && !BASE.startsWith('https://')) throw new Error('This production build needs a secure HTTPS API URL.');

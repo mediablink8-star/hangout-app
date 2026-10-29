@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, FlatList, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Spacing, Radius, Typography, Shadows } from '../../constants/theme';
 import { api } from '../../lib/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 type Conv = any;
 
@@ -12,22 +12,28 @@ export default function MessagesInbox() {
   const router = useRouter();
   const [convs, setConvs] = useState<Conv[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unread' | 'gatherings' | 'direct'>('all');
   const [q, setQ] = useState('');
   const [searching, setSearching] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(false);
     try {
       const data = await api.conversations(searching ? q : undefined);
       setConvs(data || []);
-    } catch {}
-    setLoading(false);
-  };
-  useEffect(() => { load(); }, [filter, searching]);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [searching, q]);
+  useEffect(() => { load(); }, [filter, searching, load]);
   useEffect(() => {
     const t = setInterval(load, 8000);
     return () => clearInterval(t);
-  }, [filter, searching, q]);
+  }, [filter, searching, q, load]);
 
   const filtered = convs.filter((c) => {
     if (filter === 'unread') return (c.unread_count || 0) > 0;
@@ -59,30 +65,36 @@ export default function MessagesInbox() {
           <Text style={[Typography.caption, { color: Colors.dark.textMuted }]}>Your plans, all in one place.</Text>
         </View>
         <TouchableOpacity style={styles.iconBtn} onPress={() => setSearching((s) => !s)}>
-          <Text style={{ color: Colors.dark.primary, fontSize: 18 }}>⌕</Text>
+          <Ionicons name="search" size={20} color={Colors.dark.primary} />
         </TouchableOpacity>
       </View>
 
       {searching && (
         <View style={styles.searchBar}>
-          <TextInput style={styles.searchInput} placeholder="Search conversations..." placeholderTextColor={Colors.dark.textMuted} value={q} onChangeText={setQ} autoFocus />
+          <TextInput style={styles.searchInput} placeholder="Search conversations..." placeholderTextColor={Colors.dark.textMuted} value={q} onChangeText={setQ} autoFocus onSubmitEditing={load} returnKeyType="search" />
           <TouchableOpacity onPress={() => { setSearching(false); setQ(''); load(); }}>
             <Text style={{ color: Colors.dark.primary, marginLeft: Spacing.sm }}>Cancel</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      <View style={{ flexDirection: 'row', paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm }}>
-        {(['all', 'unread', 'gatherings', 'direct'] as const).map((f, i) => (
-          <TouchableOpacity key={f} style={[styles.chip, filter === f && styles.chipOn, i < 3 && { marginRight: Spacing.sm }]} onPress={() => setFilter(f)}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, alignItems: 'center', gap: Spacing.sm }}>
+        {(['all', 'unread', 'gatherings', 'direct'] as const).map((f) => (
+          <TouchableOpacity key={f} style={[styles.chip, filter === f && styles.chipOn]} onPress={() => setFilter(f)}>
             <Text style={[styles.chipText, filter === f && styles.chipTextOn]}>
               {f === 'all' ? 'All' : f === 'unread' ? `Unread${totalUnread ? ' (' + totalUnread + ')' : ''}` : f === 'gatherings' ? 'Gatherings' : 'Direct'}
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
-      {filtered.length === 0 ? (
+      {error ? (
+        <View style={styles.empty}>
+          <Text style={[Typography.h3, { color: Colors.dark.text, textAlign: 'center' }]}>Couldn’t load conversations</Text>
+          <Text style={[Typography.caption, { color: Colors.dark.textMuted, textAlign: 'center', marginTop: Spacing.xs }]}>Check your connection and try again.</Text>
+          <TouchableOpacity style={styles.emptyBtn} onPress={load}><Text style={styles.emptyBtnText}>Try again</Text></TouchableOpacity>
+        </View>
+      ) : filtered.length === 0 ? (
         <View style={styles.empty}>
           {filter === 'unread' ? (
             <>

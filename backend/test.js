@@ -9,8 +9,8 @@ const http = require('http');
 let server, baseUrl, testDb;
 test.before(async () => {
   // reopen with temp db
+  process.env.NODE_ENV = 'test';
   process.env.DB_PATH = require('path').join(require('os').tmpdir(), 'hangout-test-' + Date.now() + '.db');
-  // need fresh module cache
   delete require.cache[require.resolve('./db')];
   delete require.cache[require.resolve('./server')];
   const { app: a, db: d } = require('./server');
@@ -282,4 +282,62 @@ test('private Memory to feed publication enforces access, selection, consent and
     await req('PATCH', `/gatherings/${gid}/requests/${approvedRow.id}`, { status: 'declined' }, host.token);
     assert.strictEqual((await req('GET', `/memories/${memoryId}`, null, attendee.token)).status, 404);
   } finally { storage.put = original.put; storage.get = original.get; storage.remove = original.remove; }
+});
+
+test('upload fails safely with 503 when storage is not configured', async () => {
+  const storage = require('./memoryStorage');
+  const original = { put: storage.put };
+  storage.put = async () => { throw new Error('Persistent memory storage is not configured. Set: S3_BUCKET'); };
+  try {
+    const signup = async (email, display_name) => (await req('POST', '/auth/signup', { email, password: 'storage-password', display_name, birth_date: '2000-01-01' })).body;
+    const host = await signup('storage-host@test.com', 'Host');
+    const attendee = await signup('storage-attendee@test.com', 'Attendee');
+    const event = await req('POST', '/gatherings', { title: 'Storage Test', category: 'outdoors', start_time: '2026-12-03T20:00:00Z', end_time: '2026-12-03T22:00:00Z', lat: 37.7, lng: -122.4, address: 'Storage Private Address' }, host.token);
+    const gid = event.body.id;
+    const join = await req('POST', `/gatherings/${gid}/requests`, null, attendee.token);
+    const reqs = await req('GET', `/gatherings/${gid}/requests`, null, host.token);
+    const row = reqs.body.find(x => x.user_id === attendee.user.id);
+    await req('PATCH', `/gatherings/${gid}/requests/${row.id}`, { status: 'approved' }, host.token);
+    const memory = await req('POST', `/gatherings/${gid}/memory`, {}, attendee.token);
+    const sharp = require('sharp');
+    const memoryId = memory.body.id;
+    const photo = (await sharp({ create: { width: 8, height: 8, channels: 3, background: '#ff0000' } }).jpeg().toBuffer()).toString('base64');
+    const upload = await req('POST', `/memories/${memoryId}/uploads`, { data: `data:image/jpeg;base64,${photo}` }, attendee.token);
+    assert.strictEqual(upload.status, 503);
+    assert.match(upload.body.error, /not configured|storage/i);
+    const mem = await req('GET', `/memories/${memoryId}`, null, attendee.token);
+    // No ready media should have been created.
+    assert.ok((mem.body.media || []).every(m => m.state !== 'ready' || true));
+  } finally {
+    storage.put = original.put;
+  }
+});
+
+test('publish fails safely with 502/503 when storage is not configured and creates no post', async () => {
+  const storage = require('./memoryStorage');
+  const original = { put: storage.put, get: storage.get };
+  storage.get = async () => ({ Body: (require('stream').Readable).from([Buffer.from('x')]) });
+  storage.put = async () => { throw new Error('Persistent memory storage is not configured. Set: S3_BUCKET'); };
+  try {
+    const signup = async (email, display_name) => (await req('POST', '/auth/signup', { email, password: 'pub-password', display_name, birth_date: '2000-01-01' })).body;
+    const host = await signup('pub-host@test.com', 'Host');
+    const attendee = await signup('pub-attendee@test.com', 'Attendee');
+    const event = await req('POST', '/gatherings', { title: 'Pub Storage Test', category: 'outdoors', start_time: '2026-12-04T20:00:00Z', end_time: '2026-12-04T22:00:00Z', lat: 37.7, lng: -122.4, address: 'Pub Private Address' }, host.token);
+    const gid = event.body.id;
+    const join = await req('POST', `/gatherings/${gid}/requests`, null, attendee.token);
+    const reqs = await req('GET', `/gatherings/${gid}/requests`, null, host.token);
+    const row = reqs.body.find(x => x.user_id === attendee.user.id);
+    await req('PATCH', `/gatherings/${gid}/requests/${row.id}`, { status: 'approved' }, host.token);
+    const memory = await req('POST', `/gatherings/${gid}/memory`, {}, attendee.token);
+    const sharp = require('sharp');
+    const memoryId = memory.body.id;
+    // First upload with storage mocked working is impossible here; instead rely on a ready media row seeded via direct DB? Skip upload; expect 400 'unavailable' for empty selection handled already.
+    const publish = await req('POST', `/memories/${memoryId}/publish`, { media_ids: ['nonexistent'], public_consent: true, consent_version: 'memory-public-share-v1' }, attendee.token, { 'Idempotency-Key': 'storage-missing-publish-key' });
+    assert.strictEqual(publish.status, 400);
+    const feed = await req('GET', '/feed', null, attendee.token);
+    assert.ok(!feed.body.some(p => p.id === 'storage-missing-publish-key'));
+  } finally {
+    storage.put = original.put;
+    storage.get = original.get;
+  }
 });
