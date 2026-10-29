@@ -89,7 +89,7 @@ export default function Profile() {
       {editing ? (
         <View>
           <TouchableOpacity onPress={pickAvatar} style={{ alignSelf: 'center' }}>
-            {avatar ? <Image source={{ uri: avatar }} style={styles.avatar} /> : <View style={styles.avatar} />}
+            {avatar ? <Image source={{ uri: avatar }} style={styles.avatar} /> : <View style={[styles.avatar, styles.avatarFallback]}><Text style={styles.avatarInitial}>{name?.trim()?.charAt(0)?.toUpperCase() || '?'}</Text></View>}
             <Text style={[Typography.caption, { color: Colors.dark.primary, textAlign: 'center', marginTop: Spacing.sm }]}>Change photo</Text>
           </TouchableOpacity>
           <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Display name" placeholderTextColor={Colors.dark.textMuted} />
@@ -116,7 +116,7 @@ export default function Profile() {
         <>
           <View style={styles.profileHero}>
           <View style={styles.header}>
-            {user.avatar_url ? <Image source={{ uri: user.avatar_url }} style={styles.avatar} /> : <View style={styles.avatar} />}
+            {user.avatar_url ? <Image source={{ uri: user.avatar_url }} style={styles.avatar} /> : <View style={[styles.avatar, styles.avatarFallback]}><Text style={styles.avatarInitial}>{user.display_name?.trim()?.charAt(0)?.toUpperCase() || '?'}</Text></View>}
             <View style={{ marginLeft: Spacing.md, flex: 1 }}>
               <Text style={[Typography.h2, { color: Colors.dark.text }]}>{user.display_name}</Text>
               {user.is_founding_host ? <Text style={[Typography.caption, { color: Colors.dark.primary }]}>✦ Founding host</Text> : null}
@@ -187,6 +187,8 @@ const styles = StyleSheet.create({
   statLabel: { color: Colors.dark.textMuted, fontSize: 10 },
   statDivider: { width: 1, height: 24, backgroundColor: Colors.dark.borderStrong },
   avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: Colors.dark.glass, borderWidth: 2, borderColor: Colors.dark.primary },
+  avatarFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#263629' },
+  avatarInitial: { color: Colors.dark.primary, fontSize: 26, fontWeight: '900' },
   card: { backgroundColor: Colors.dark.surface, padding: 16, borderRadius: Radius.xl, marginTop: Spacing.sm, borderWidth: 1, borderColor: Colors.dark.borderStrong },
   input: { backgroundColor: Colors.dark.glass, color: Colors.dark.text, padding: Spacing.md, borderRadius: Radius.md, marginTop: Spacing.md, borderWidth: 1, borderColor: Colors.dark.border },
   btn: { backgroundColor: Colors.dark.primary, padding: Spacing.md, borderRadius: Radius.md, alignItems: 'center', marginTop: Spacing.lg },
