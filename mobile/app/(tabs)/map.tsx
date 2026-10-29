@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { Colors, Radius, Spacing, Typography } from '../../constants/theme';
 import { api } from '../../lib/api';
 import { Gathering } from '../../lib/types';
@@ -28,7 +29,7 @@ export default function MapTab() {
     <View style={styles.container}>
       <HangoutMap gatherings={gatherings} onSelect={(id) => router.push(`/g/${id}`)} />
       <SafeAreaView style={styles.overlay} edges={['top']}>
-        <View style={styles.header}>
+        <BlurView intensity={48} tint="dark" style={styles.header}>
           <View style={styles.headingIcon}><Ionicons name="map" size={19} color={Colors.dark.primary} /></View>
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>Explore map</Text>
@@ -38,7 +39,7 @@ export default function MapTab() {
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Refresh map" style={styles.refresh} onPress={() => void load()}>
             <Ionicons name="refresh" size={18} color={Colors.dark.text} />
           </TouchableOpacity>
-        </View>
+        </BlurView>
         {loading && <View style={styles.status}><ActivityIndicator color={Colors.dark.primary}/><Text style={styles.statusText}>Finding plans…</Text></View>}
         {error && !loading && <TouchableOpacity style={styles.status} onPress={() => void load()}><Text style={styles.statusText}>Couldn’t load plans. Tap to retry.</Text></TouchableOpacity>}
       </SafeAreaView>
@@ -49,14 +50,14 @@ export default function MapTab() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
   overlay: { ...StyleSheet.absoluteFillObject, pointerEvents: 'box-none' as any },
-  header: { marginHorizontal: Spacing.md, marginTop: Spacing.xs, padding: Spacing.md, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, backgroundColor: 'rgba(23,19,33,0.90)', borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.dark.borderStrong },
+  header: { marginHorizontal: Spacing.md, marginTop: Spacing.xs, padding: Spacing.md, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, backgroundColor: 'rgba(23,19,33,0.62)', borderRadius: Radius.xl, borderWidth: 1, borderColor: 'rgba(246,241,255,0.15)', overflow: 'hidden' },
   headingIcon: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: 'rgba(231,138,215,0.16)' },
-  title: { ...Typography.h3, color: Colors.dark.text },
-  subtitle: { color: Colors.dark.textMuted, fontSize: 11, marginTop: 2 },
+  title: { ...Typography.h3, color: Colors.dark.text, letterSpacing: -0.25 },
+  subtitle: { color: '#C5B9D7', fontSize: 11, marginTop: 2 },
   countPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 7, borderRadius: Radius.full, backgroundColor: 'rgba(36,28,47,0.92)' },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.dark.primary },
   countText: { color: Colors.dark.text, fontSize: 10, fontWeight: '700' },
-  refresh: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.dark.surface2 },
+  refresh: { width: 36, height: 36, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(246,241,255,0.07)', borderWidth: 1, borderColor: 'rgba(246,241,255,0.09)' },
   status: { alignSelf: 'center', marginTop: Spacing.sm, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.full, backgroundColor: 'rgba(23,19,33,0.92)', flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, borderWidth: 1, borderColor: Colors.dark.border },
   statusText: { color: Colors.dark.text, fontSize: 12, fontWeight: '600' },
 });
