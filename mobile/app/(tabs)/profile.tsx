@@ -6,6 +6,7 @@ import { Colors, Spacing, Radius, Typography } from '../../constants/theme';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { Gathering } from '../../lib/types';
+import LiquidGlassBackground from '../../components/LiquidGlassBackground';
 
 export default function Profile() {
   const router = useRouter();
@@ -87,7 +88,9 @@ export default function Profile() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 132 }}>
+    <View style={styles.screenRoot}>
+      <LiquidGlassBackground />
+      <ScrollView style={[styles.container, { backgroundColor: 'transparent' }]} contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 132 }}>
       <View style={styles.brandRow}><View style={styles.brandLockup}><View style={styles.brandMark}><Text style={styles.brandMarkText}>H</Text></View><View><Text style={styles.brandName}>Hangout</Text><Text style={styles.brandCaption}>YOUR CIRCLE, YOUR WAY</Text></View></View><TouchableOpacity accessibilityRole="button" accessibilityLabel="Open notifications" style={styles.headerAction} onPress={() => router.push('/notifications')}><Text style={styles.headerActionText}>Notifications ↗</Text></TouchableOpacity></View>
       {editing ? (
         <View>
@@ -168,11 +171,13 @@ export default function Profile() {
           </TouchableOpacity>
         </>
       )}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screenRoot: { flex: 1, backgroundColor: Colors.dark.background },
   container: { flex: 1, backgroundColor: Colors.dark.background },
   brandRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.xl },
   brandLockup: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
